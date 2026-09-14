@@ -28,6 +28,10 @@ services:
         sync: false
       - key: DB_PATH
         value: /data/aeltra.db     # persiste en el disco montado
+      - key: BASIC_AUTH_USER
+        sync: false                # usuario para entrar a la app (elegilo vos)
+      - key: BASIC_AUTH_PASS
+        sync: false                # contraseña (elegí una fuerte)
       - key: UNSUB_BASE
         sync: false                # poné acá tu URL pública: https://<app>.onrender.com/api/baja
     disk:

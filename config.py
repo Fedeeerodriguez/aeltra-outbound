@@ -26,6 +26,10 @@ FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USER)
 PROSPECTS_MOCK = _b(os.getenv("PROSPECTS_MOCK"), True)
 APIFY_TOKEN = os.getenv("APIFY_TOKEN", "")
 
+# Auth (protege la app cuando está deployada; vacío = sin auth para local)
+BASIC_AUTH_USER = os.getenv("BASIC_AUTH_USER", "")
+BASIC_AUTH_PASS = os.getenv("BASIC_AUTH_PASS", "")
+
 # Identidad / compliance
 COMPANY_NAME = os.getenv("COMPANY_NAME", "Aeltra")
 COMPANY_TAGLINE = os.getenv("COMPANY_TAGLINE", "Software & IA")

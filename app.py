@@ -27,6 +27,28 @@ from agents.emailing import enviar_core
 app = FastAPI(title="Aeltra Outbound")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+
+@app.middleware("http")
+async def _basic_auth(request, call_next):
+    """Si BASIC_AUTH_USER/PASS están seteados, exige auth en todo menos la baja."""
+    if config.BASIC_AUTH_USER and config.BASIC_AUTH_PASS and not request.url.path.startswith("/api/baja"):
+        import base64
+        import secrets
+        from starlette.responses import Response
+        hdr = request.headers.get("authorization", "")
+        ok = False
+        if hdr.startswith("Basic "):
+            try:
+                u, _, p = base64.b64decode(hdr[6:]).decode().partition(":")
+                ok = (secrets.compare_digest(u, config.BASIC_AUTH_USER)
+                      and secrets.compare_digest(p, config.BASIC_AUTH_PASS))
+            except Exception:
+                ok = False
+        if not ok:
+            return Response(status_code=401, content="Auth requerida",
+                            headers={"WWW-Authenticate": 'Basic realm="Aeltra"'})
+    return await call_next(request)
+
 INDEX = os.path.join(config.BASE_DIR, "static", "index.html")
 
 
