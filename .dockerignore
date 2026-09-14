@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+aeltra.db
+aeltra.db-wal
+aeltra.db-shm
+.git/
+.gitignore
+client_secret.json
+token.json
+*.log
+render.yaml
+PLAN_DE_ACCION.md

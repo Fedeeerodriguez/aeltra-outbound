@@ -71,18 +71,27 @@ agents/
 - **Manual:** desde la dashboard (Lanzar campaña) o hablándole a un agente en la pestaña **Agentes**.
 - **Automático:** panel **⏰ Automatización** → creás rutinas por horario (ej: "todos los días 09:00 buscá 100 prospectos, sin enviar" o "campaña completa"). El scheduler (`scheduler.py`) las dispara solo. Cada rutina también tiene ▶ para dispararla a mano.
 
-## Deploy 24/7 (para que corra sin tu PC, como Optimizar)
+## Deploy 24/7 en EasyPanel (para que corra sin tu PC, como Optimizar)
 El worker de envío y el scheduler de rutinas son tareas asyncio dentro del mismo
-proceso: **si el server corre 24/7, todo se dispara solo.**
-1. Subí `C:\aeltra-outreach` a un repo de GitHub.
-2. En **Render** → New → Blueprint → apuntá a `render.yaml`.
-3. Cargá las variables (`ANTHROPIC_API_KEY`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL`,
-   `APIFY_TOKEN`, y `UNSUB_BASE` con tu URL pública).
-4. Deploy. Queda en `https://<tu-app>.onrender.com` corriendo 24/7.
+proceso: **si el server corre 24/7, todo se dispara solo.** Se buildea con el `Dockerfile`.
 
-> Opcional (100% estilo Optimizar): además del deploy, se puede armar un
-> *scheduled cloud agent* de Claude Code que le pegue a los endpoints para
-> orquestar campañas en horarios — avisame y lo montamos.
+1. Repo ya en GitHub: `github.com/Fedeeerodriguez/aeltra-outbound`.
+2. En **EasyPanel** → *Create Service* → **App** → source **GitHub** → elegí el repo.
+3. Build: **Dockerfile** (lo detecta solo).
+4. **Environment** → cargá las variables:
+   `ANTHROPIC_API_KEY`, `SENDER_BACKEND=gmail_oauth`,
+   `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `GMAIL_SENDER`,
+   `FROM_EMAIL`, `BASIC_AUTH_USER`, `BASIC_AUTH_PASS`, `APIFY_TOKEN` (opcional),
+   `PROSPECTS_MOCK` (`true` para probar), `DB_PATH=/data/aeltra.db`,
+   `UNSUB_BASE=https://<tu-dominio>/api/baja`.
+5. **Volumes** → montá un volumen en **`/data`** (para que la base SQLite persista entre deploys).
+6. **Port**: 8000. Asignale un dominio → Deploy.
+7. Abrí el dominio → pide usuario/clave (BASIC_AUTH) → dashboard en la nube. 🎉
+
+> Nota: en el server NO está el CLI de Claude Code, así que el botón "Modo Claude Code"
+> y las rutinas con `motor=claude` no corren ahí (usan el motor Python, que sí anda).
+> Los agentes `.md` se disparan desde tu máquina o desde un *scheduled cloud agent*
+> que le pega a la URL pública.
 
 ## ⚠️ Deliverability y legal
 Cold email a volumen con Gmail gratis **se satura/banea rápido**. Para arrancar y

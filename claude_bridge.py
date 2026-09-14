@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Puente a los agentes .md de Claude Code: los dispara en headless (claude -p --agent)."""
+import os
 import json
 import shutil
 import subprocess
@@ -7,7 +8,10 @@ import subprocess
 import config
 import activity
 
-CLAUDE_BIN = shutil.which("claude") or r"C:\Users\Usuario\AppData\Roaming\npm\claude.cmd"
+CLAUDE_BIN = shutil.which("claude")
+if not CLAUDE_BIN:
+    _fallback = r"C:\Users\Usuario\AppData\Roaming\npm\claude.cmd"
+    CLAUDE_BIN = _fallback if os.path.exists(_fallback) else None
 
 # mapea el agente .md al slot de actividad de la dashboard
 _ACT = {
@@ -24,6 +28,10 @@ def act_slot(agente):
 def run_agent(agente, objetivo, budget=1.0, timeout=600):
     """Corre un agente .md de Claude Code en headless y devuelve su resultado."""
     slot = act_slot(agente)
+    if not CLAUDE_BIN:
+        msg = "El CLI de Claude Code no está en este entorno (server). Usá el motor Python."
+        activity.update(slot, "error", msg)
+        return {"ok": False, "error": msg}
     activity.update(slot, "trabajando", f"Claude Code · {agente} ejecutando…")
     try:
         proc = subprocess.run(
