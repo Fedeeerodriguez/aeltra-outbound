@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aeltra Outbound</title>
+<style>
+:root{--navy:#0B1121;--panel:#111a2e;--panel2:#0d1526;--line:#1e2b45;
+  --cyan:#22D3EE;--azul:#3B82F6;--morado:#7C3AED;--hueso:#EEF4FF;--mut:#8CA0C0;
+  --green:#34d399;--red:#f87171;--amber:#f0b35b;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--navy);color:var(--hueso);
+  font:15px/1.55 "Segoe UI",system-ui,Arial,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 20px 80px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.logo{width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--cyan),var(--morado));
+  display:grid;place-items:center;font-weight:900;color:#04121f}
+h1{font-size:22px;margin:0;font-weight:900;letter-spacing:-.01em}
+.sub{color:var(--mut);font-size:13px;margin:0 0 18px 46px}
+.grad{background:linear-gradient(120deg,var(--cyan),var(--azul) 55%,var(--morado));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.tabs{display:flex;gap:8px;margin-bottom:22px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;color:var(--mut);font:800 14px "Segoe UI",Arial;padding:10px 16px;
+  cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--hueso);border-bottom-color:var(--cyan)}
+.view{display:none} .view.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:26px}
+@media(max-width:720px){.cards{grid-template-columns:repeat(2,1fr)}}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border:1px solid var(--line);border-radius:14px;padding:16px}
+.card .k{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
+.card .v{font-size:28px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:20px}
+.panel h2{margin:0 0 4px;font-size:17px}
+.panel p.hint{margin:0 0 14px;color:var(--mut);font-size:13px}
+textarea,input[type=text],input[type=email]{width:100%;background:var(--panel2);
+  border:1px solid var(--line);color:var(--hueso);border-radius:10px;padding:12px;
+  font:15px "Segoe UI",Arial,sans-serif;resize:vertical}
+button.act{background:linear-gradient(120deg,var(--cyan),var(--azul));color:#04121f;
+  border:0;border-radius:10px;padding:11px 18px;font-weight:800;cursor:pointer;margin-top:12px}
+button.ghost{background:transparent;color:var(--hueso);border:1px solid var(--line);
+  border-radius:10px;padding:11px 18px;font-weight:800;cursor:pointer;margin-top:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.06em}
+.badge{font-size:11px;font-weight:800;padding:3px 8px;border-radius:999px;background:rgba(34,211,238,.14);color:var(--cyan)}
+.out{white-space:pre-wrap;background:var(--panel2);border:1px solid var(--line);
+  border-radius:10px;padding:12px;margin-top:12px;font-size:13px;color:#b7c6e0;display:none}
+.tblwrap{overflow-x:auto}
+small.warn{color:var(--amber)}
+/* agentes */
+.agrid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:760px){.agrid{grid-template-columns:1fr}}
+.agent{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column}
+.ahead{display:flex;align-items:center;gap:10px}
+.aemoji{font-size:22px}
+.aname{font-weight:900;font-size:16px}
+.adesc{color:var(--mut);font-size:12px;margin:2px 0 0}
+.st{margin-left:auto;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+.st.idle{background:#1b2740;color:var(--mut)}
+.st.trabajando{background:rgba(34,211,238,.16);color:var(--cyan);animation:pulse 1.2s infinite}
+.st.listo{background:rgba(52,211,153,.16);color:var(--green)}
+.st.error{background:rgba(248,113,113,.16);color:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.amsg{margin:14px 0 8px;font-size:13.5px;color:#cdd8ec;min-height:20px}
+.bar{height:6px;background:#0e1830;border-radius:6px;overflow:hidden;margin-bottom:12px;display:none}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--morado));width:0}
+.alog{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+  font-size:11.5px;color:#8fa0be;max-height:96px;overflow:auto;margin-bottom:12px;font-family:ui-monospace,Consolas,monospace}
+.achat{display:flex;gap:8px;margin-top:auto}
+.achat input{flex:1}
+.achat button{margin-top:0;padding:10px 14px}
+.aresp{white-space:pre-wrap;background:#0a1220;border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;margin-top:10px;font-size:13px;color:#b7c6e0;display:none}
+.note{background:rgba(124,58,237,.10);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+  color:#c9b8f0;font-size:13px;margin-bottom:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="logo">A</div><h1>Aeltra <span class="grad">Outbound</span></h1></header>
+  <p class="sub">Máquina de outbound + email marketing · pipeline, agentes y envío paceado</p>
+
+  <div class="tabs">
+    <button class="tab active" data-v="panel" onclick="tab('panel')">Panel</button>
+    <button class="tab" data-v="agentes" onclick="tab('agentes')">Agentes</button>
+  </div>
+
+  <!-- ══ PANEL ══ -->
+  <div class="view active" id="view-panel">
+    <div class="cards" id="cards"></div>
+
+    <div class="panel">
+      <h2>🚀 Lanzar campaña</h2>
+      <p class="hint">Escribile al orquestador en lenguaje natural. Ej: "Buscá 30 tiendas online en Argentina y mandales un mail en las próximas 3 horas."</p>
+      <textarea id="objetivo" rows="3" placeholder="Buscá 30 e-commerce en Argentina y escribiles un mail en 3 horas"></textarea>
+      <div class="row"><button class="act" onclick="lanzar()">Lanzar campaña</button><small class="warn" id="warn"></small></div>
+      <div class="out" id="outLanzar"></div>
+    </div>
+
+    <div class="panel">
+      <h2>⏰ Automatización (rutinas)</h2>
+      <p class="hint">Programá disparos automáticos por horario. Ej: todos los días a las 09:00 buscar 100 prospectos (sin enviar), o lanzar una campaña completa. También podés dispararlas a mano con ▶.</p>
+      <div class="row" style="gap:10px;align-items:stretch">
+        <input type="text" id="rNombre" placeholder="Nombre (ej: Búsqueda diaria indumentaria)" style="flex:2;min-width:200px">
+        <select id="rTipo" style="flex:1;min-width:140px;background:var(--panel2);border:1px solid var(--line);color:var(--hueso);border-radius:10px;padding:12px">
+          <option value="busqueda">Solo búsqueda (no envía)</option>
+          <option value="campania">Campaña completa (envía)</option>
+        </select>
+        <select id="rMotor" style="flex:1;min-width:160px;background:var(--panel2);border:1px solid var(--line);color:var(--hueso);border-radius:10px;padding:12px" title="Con qué motor se ejecuta">
+          <option value="engine">Motor Python</option>
+          <option value="claude">Agentes Claude Code (.md)</option>
+        </select>
+        <input type="text" id="rHora" placeholder="09:00" value="09:00" style="width:90px">
+      </div>
+      <div style="margin-top:10px"><input type="text" id="rInstr" placeholder="Instrucción para el agente (ej: buscá 100 tiendas de indumentaria en Argentina)"></div>
+      <button class="act" onclick="crearRutina()">Crear rutina</button>
+      <div class="tblwrap" style="margin-top:14px"><table id="tblRutinas">
+        <thead><tr><th>Estado</th><th>Nombre</th><th>Tipo</th><th>Hora</th><th>Instrucción</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+
+    <div class="panel">
+      <h2>📇 Importar prospectos (CSV)</h2>
+      <p class="hint">Columnas: nombre, email, empresa (opcional nicho, pais).</p>
+      <div class="row"><input type="file" id="csv" accept=".csv"><button class="ghost" onclick="importar()">Importar</button></div>
+      <div class="out" id="outImport"></div>
+    </div>
+
+    <div class="panel">
+      <h2>✉️ Envío de prueba</h2>
+      <p class="hint">Manda un mail real a una casilla tuya para verificar el SMTP.</p>
+      <div class="row" style="gap:10px">
+        <input type="email" id="tEmail" placeholder="tucorreo@gmail.com" style="flex:1;min-width:200px">
+        <input type="text" id="tNombre" placeholder="Nombre" style="flex:1;min-width:140px">
+      </div>
+      <button class="act" onclick="testEnvio()">Enviar prueba</button>
+      <div class="out" id="outTest"></div>
+    </div>
+
+    <div class="panel">
+      <h2>👥 Pipeline de contactos</h2>
+      <div class="tblwrap"><table id="tabla">
+        <thead><tr><th>Nombre</th><th>Email</th><th>Empresa</th><th>Estado</th><th>Fuente</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ AGENTES ══ -->
+  <div class="view" id="view-agentes">
+    <div class="note">Hablales directo a cada agente y mirá en qué está trabajando en tiempo real.
+      El de <b>Búsqueda</b> solo recopila en la base (no envía); el <b>Orquestador</b> dispara campañas completas.</div>
+
+    <div class="panel">
+      <h2>🤖 Modo Claude Code (.md)</h2>
+      <p class="hint">Corré la variante <b>.md con rieles</b> (la misma que usa el scheduler y el orquestador). Trabaja contra el motor. Tarda ~1-2 min.</p>
+      <div class="row" style="gap:10px;align-items:stretch">
+        <select id="ccAgente" style="flex:1;min-width:180px;background:var(--panel2);border:1px solid var(--line);color:var(--hueso);border-radius:10px;padding:12px">
+          <option value="aeltra-orquestador">orquestador (campaña completa)</option>
+          <option value="aeltra-buscador">buscador (solo recopila)</option>
+          <option value="aeltra-copywriter">copywriter (escribe copy)</option>
+          <option value="aeltra-ejecutor">ejecutor (controla envío)</option>
+        </select>
+        <input type="text" id="ccObj" placeholder="Objetivo, ej: buscá 50 gimnasios en Argentina" style="flex:2;min-width:220px">
+        <button class="act" style="margin-top:0" onclick="ccRun()">Correr</button>
+      </div>
+      <div class="out" id="outCC"></div>
+    </div>
+
+    <div class="agrid" id="agentes"></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+async function jget(u){return (await fetch(u)).json()}
+async function jpost(u,b){return (await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})).json()}
+
+function tab(v){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  $('#view-'+v).classList.add('active');
+}
+
+// ── Panel ──
+async function refresh(){
+  const s=await jget('/api/stats');
+  const defs=[['Contactos','contactos'],['Enviados','enviados'],['En cola','en_cola'],['Respondieron','respondieron'],['Clientes','clientes']];
+  $('#cards').innerHTML=defs.map(([k,f])=>`<div class="card"><div class="k">${k}</div><div class="v">${s[f]||0}</div></div>`).join('');
+  const c=await jget('/api/contactos');
+  $('#tabla tbody').innerHTML=c.slice(0,50).map(x=>`<tr><td>${x.nombre||'—'}</td><td>${x.email}</td><td>${x.empresa||'—'}</td><td><span class="badge">${x.estado}</span></td><td>${x.fuente||'—'}</td></tr>`).join('')||'<tr><td colspan=5 style="color:#8CA0C0">Sin contactos todavía.</td></tr>';
+}
+async function lanzar(){
+  const o=$('#objetivo').value.trim(); if(!o)return;
+  const box=$('#outLanzar'); box.style.display='block'; box.textContent='Orquestando… (buscando prospectos + escribiendo copy)';
+  const r=await jpost('/api/campanias/lanzar',{objetivo:o});
+  box.textContent='Resumen:\n'+JSON.stringify(r,null,2); refresh();
+}
+async function importar(){
+  const f=$('#csv').files[0]; if(!f)return;
+  const fd=new FormData(); fd.append('file',f);
+  const box=$('#outImport'); box.style.display='block'; box.textContent='Importando…';
+  const r=await (await fetch('/api/contactos/import',{method:'POST',body:fd})).json();
+  box.textContent='Importados: '+r.importados; refresh();
+}
+async function testEnvio(){
+  const email=$('#tEmail').value.trim(); if(!email)return;
+  const box=$('#outTest'); box.style.display='block'; box.textContent='Enviando…';
+  const r=await jpost('/api/test-envio',{email,nombre:$('#tNombre').value});
+  box.textContent=JSON.stringify(r,null,2);
+}
+
+// ── Rutinas ──
+async function cargarRutinas(){
+  const rs=await jget('/api/rutinas');
+  $('#tblRutinas tbody').innerHTML = rs.map(r=>`<tr>
+    <td><span class="badge" style="${r.activa?'':'background:#1b2740;color:#8CA0C0'}">${r.activa?'activa':'pausada'}</span></td>
+    <td>${r.nombre||'—'}</td>
+    <td>${r.tipo==='campania'?'Campaña':'Búsqueda'}</td>
+    <td>${r.hora}</td>
+    <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.instruccion}</td>
+    <td style="white-space:nowrap">
+      <a href="#" onclick="runRutina(${r.id});return false" title="Disparar ya">▶</a>&nbsp;&nbsp;
+      <a href="#" onclick="toggleRutina(${r.id});return false" title="Pausar/activar">⏯</a>&nbsp;&nbsp;
+      <a href="#" onclick="delRutina(${r.id});return false" title="Borrar">🗑</a>
+    </td></tr>`).join('') || '<tr><td colspan=6 style="color:#8CA0C0">Sin rutinas. Creá una arriba.</td></tr>';
+}
+async function crearRutina(){
+  const nombre=$('#rNombre').value.trim(), instruccion=$('#rInstr').value.trim();
+  if(!instruccion){alert('Escribí la instrucción');return;}
+  await jpost('/api/rutinas',{nombre,tipo:$('#rTipo').value,motor:$('#rMotor').value,instruccion,hora:$('#rHora').value.trim()||'09:00'});
+  $('#rNombre').value='';$('#rInstr').value=''; cargarRutinas();
+}
+async function runRutina(id){await jpost(`/api/rutinas/${id}/run`,{}); alert('Disparada. Mirá la pestaña Agentes.');}
+async function toggleRutina(id){await jpost(`/api/rutinas/${id}/toggle`,{}); cargarRutinas();}
+async function delRutina(id){if(confirm('¿Borrar rutina?')){await fetch(`/api/rutinas/${id}`,{method:'DELETE'}); cargarRutinas();}}
+
+// ── Modo Claude Code ──
+async function ccRun(){
+  const objetivo=$('#ccObj').value.trim(); if(!objetivo)return;
+  const box=$('#outCC'); box.style.display='block'; box.textContent='Disparando agente .md… (mirá las tarjetas de abajo para el progreso)';
+  const r=await jpost('/api/claude/run',{agente:$('#ccAgente').value,objetivo});
+  box.textContent=r.respuesta||JSON.stringify(r); pollAgents();
+}
+
+// ── Agentes ──
+const AGENTS=[
+  {k:'orquestador',e:'🧠',n:'Orquestador',d:'Dispara campañas completas: busca + escribe + envía.',ph:'Buscá 30 e-commerce AR y mandá mail en 3h'},
+  {k:'busqueda',e:'🔎',n:'Búsqueda',d:'Junta prospectos en la base. NO envía.',ph:'Buscá 300 tiendas de indumentaria en Argentina'},
+  {k:'copywriter',e:'✍️',n:'Copywriter',d:'Escribe el mail B2B. NO envía.',ph:'Escribí un mail para dueños de gimnasios'},
+  {k:'ejecutor',e:'📤',n:'Ejecutor',d:'Envía la cola paceada. Controlá con pausá / reanudá.',ph:'pausá   ·   reanudá   ·   estado'},
+];
+function buildAgents(){
+  $('#agentes').innerHTML=AGENTS.map(a=>`
+    <div class="agent" id="ag-${a.k}">
+      <div class="ahead"><span class="aemoji">${a.e}</span>
+        <div><div class="aname">${a.n}</div><div class="adesc">${a.d}</div></div>
+        <span class="st idle" data-st>idle</span></div>
+      <div class="amsg" data-msg>En espera</div>
+      <div class="bar" data-bar><i></i></div>
+      <div class="alog" data-log></div>
+      <div class="achat">
+        <input type="text" data-in placeholder="${a.ph}" onkeydown="if(event.key==='Enter')chat('${a.k}')">
+        <button class="act" onclick="chat('${a.k}')">Enviar</button>
+      </div>
+      <div class="aresp" data-resp></div>
+    </div>`).join('');
+}
+async function chat(k){
+  const card=$('#ag-'+k), inp=card.querySelector('[data-in]'), resp=card.querySelector('[data-resp]');
+  const msg=inp.value.trim(); if(!msg)return;
+  resp.style.display='block'; resp.textContent='…';
+  inp.value='';
+  const r=await jpost(`/api/agentes/${k}/chat`,{mensaje:msg});
+  resp.textContent=r.respuesta||JSON.stringify(r);
+  pollAgents();
+}
+async function pollAgents(){
+  const s=await jget('/api/agentes');
+  AGENTS.forEach(a=>{
+    const st=s[a.k]; if(!st)return; const card=$('#ag-'+a.k); if(!card)return;
+    const b=card.querySelector('[data-st]'); b.textContent=st.estado; b.className='st '+st.estado;
+    card.querySelector('[data-msg]').textContent=st.mensaje||'—';
+    const bar=card.querySelector('[data-bar]');
+    if(st.progreso!=null && st.estado==='trabajando'){bar.style.display='block';bar.querySelector('i').style.width=st.progreso+'%';}
+    else{bar.style.display='none';}
+    card.querySelector('[data-log]').innerHTML=(st.log||[]).slice().reverse().map(l=>`<div>${l.t} · ${l.m}</div>`).join('');
+  });
+}
+
+buildAgents();
+refresh(); setInterval(refresh,8000);
+cargarRutinas();
+pollAgents(); setInterval(pollAgents,2000);
+</script>
+</body>
+</html>
