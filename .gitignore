@@ -6,3 +6,5 @@ aeltra.db
 aeltra.db-wal
 aeltra.db-shm
 *.log
+client_secret.json
+token.json

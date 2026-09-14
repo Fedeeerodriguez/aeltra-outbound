@@ -14,6 +14,15 @@ def _b(v, default=False):
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "claude-opus-5")
 
+# Backend de envío: 'smtp' (app password) | 'gmail_oauth' (Gmail API OAuth2)
+SENDER_BACKEND = os.getenv("SENDER_BACKEND", "smtp")
+
+# Gmail OAuth2
+GMAIL_CLIENT_ID = os.getenv("GMAIL_CLIENT_ID", "")
+GMAIL_CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET", "")
+GMAIL_REFRESH_TOKEN = os.getenv("GMAIL_REFRESH_TOKEN", "")
+GMAIL_SENDER = os.getenv("GMAIL_SENDER", "")
+
 # SMTP
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
@@ -48,3 +57,8 @@ def llm_ready() -> bool:
 
 def smtp_ready() -> bool:
     return bool(SMTP_USER and SMTP_PASS)
+
+def sender_ready() -> bool:
+    if SENDER_BACKEND == "gmail_oauth":
+        return bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN)
+    return smtp_ready()

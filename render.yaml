@@ -10,13 +10,15 @@ services:
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: "465"
-      - key: SMTP_USER
+      - key: SENDER_BACKEND
+        value: gmail_oauth
+      - key: GMAIL_CLIENT_ID
         sync: false
-      - key: SMTP_PASS
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
+      - key: GMAIL_SENDER
         sync: false
       - key: FROM_NAME
         value: Aeltra
