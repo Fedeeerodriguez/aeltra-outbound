@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Fuentes de prospectos: Apify (Google Maps) + búsqueda web. Con modo mock."""
 import re
+import time
 import random
 import httpx
 
@@ -52,9 +53,9 @@ def apify_google_maps(nicho, pais, cantidad):
                 "nombre": "", "email": email, "empresa": it.get("title", ""),
                 "nicho": nicho, "pais": pais, "fuente": "apify",
             })
-        return out or _mock(nicho, pais, min(cantidad, 15))
+        return out  # en modo real NO inyectamos mock (evita mails falsos que rebotan)
     except Exception:
-        return _mock(nicho, pais, min(cantidad, 15))
+        return []
 
 
 def web_search(nicho, pais, cantidad):
@@ -74,9 +75,9 @@ def web_search(nicho, pais, cantidad):
                             "nicho": nicho, "pais": pais, "fuente": "web"})
             if len(out) >= cantidad:
                 break
-        return out or _mock(nicho, pais, min(cantidad, 15))
+        return out  # en modo real NO inyectamos mock (evita mails falsos que rebotan)
     except Exception:
-        return _mock(nicho, pais, min(cantidad, 15))
+        return []
 
 
 def _scrape_email(website):
@@ -88,6 +89,44 @@ def _scrape_email(website):
         return None
 
 
+def google_places(nicho, pais, cantidad):
+    """Busca comercios con la Places API (Google Maps Platform) y saca el email de la web.
+    Maps NO da email → se scrapea del sitio de cada comercio (por eso no todos rinden mail)."""
+    if config.PROSPECTS_MOCK or not config.GOOGLE_MAPS_API_KEY:
+        return _mock(nicho, pais, cantidad)
+    try:
+        url = "https://places.googleapis.com/v1/places:searchText"
+        headers = {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": config.GOOGLE_MAPS_API_KEY,
+            "X-Goog-FieldMask": "places.displayName,places.websiteUri,nextPageToken",
+        }
+        out, token = [], None
+        for _ in range(max(1, (cantidad + 19) // 20)):
+            body = {"textQuery": f"{nicho} en {pais}", "languageCode": "es"}
+            if token:
+                body["pageToken"] = token
+            r = httpx.post(url, json=body, headers=headers, timeout=30)
+            r.raise_for_status()
+            data = r.json()
+            for pl in data.get("places", []):
+                site = pl.get("websiteUri")
+                empresa = (pl.get("displayName") or {}).get("text", "")
+                email = _scrape_email(site) if site else None
+                if email:
+                    out.append({"nombre": "", "email": email, "empresa": empresa,
+                                "nicho": nicho, "pais": pais, "fuente": "google_places"})
+                if len(out) >= cantidad:
+                    break
+            token = data.get("nextPageToken")
+            if not token or len(out) >= cantidad:
+                break
+            time.sleep(2)  # el nextPageToken tarda ~2s en activarse
+        return out
+    except Exception:
+        return []
+
+
 def search_prospects(nicho, pais, cantidad, fuentes=("apify", "web")):
     """Combina fuentes, deduplica por email y devuelve hasta `cantidad`."""
     por_fuente = max(1, cantidad // max(1, len(fuentes)))
@@ -95,6 +134,8 @@ def search_prospects(nicho, pais, cantidad, fuentes=("apify", "web")):
     for f in fuentes:
         if f == "apify":
             juntos += apify_google_maps(nicho, pais, por_fuente + 5)
+        elif f in ("google_places", "google_maps", "maps"):
+            juntos += google_places(nicho, pais, por_fuente + 5)
         elif f == "web":
             juntos += web_search(nicho, pais, por_fuente + 5)
     vistos, unicos = set(), []

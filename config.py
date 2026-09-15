@@ -34,6 +34,7 @@ FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USER)
 # Prospectos
 PROSPECTS_MOCK = _b(os.getenv("PROSPECTS_MOCK"), True)
 APIFY_TOKEN = os.getenv("APIFY_TOKEN", "")
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 
 # Auth (protege la app cuando está deployada; vacío = sin auth para local)
 BASIC_AUTH_USER = os.getenv("BASIC_AUTH_USER", "")
