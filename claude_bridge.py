@@ -32,13 +32,17 @@ def run_agent(agente, objetivo, budget=1.0, timeout=600):
         msg = "El CLI de Claude Code no está en este entorno (server). Usá el motor Python."
         activity.update(slot, "error", msg)
         return {"ok": False, "error": msg}
-    activity.update(slot, "trabajando", f"Claude Code · {agente} ejecutando…")
+    activity.update(slot, "trabajando", f"Claude Code · {agente} ejecutando (Claude Max)…")
+    # Usar la suscripcion (Claude Max) en vez de la API: quitamos la key del subproceso.
+    env = os.environ.copy()
+    env.pop("ANTHROPIC_API_KEY", None)
+    env.pop("ANTHROPIC_AUTH_TOKEN", None)
     try:
         proc = subprocess.run(
             [CLAUDE_BIN, "-p", objetivo, "--agent", agente,
              "--permission-mode", "bypassPermissions",
-             "--output-format", "json", "--max-budget-usd", str(budget)],
-            cwd=config.BASE_DIR, capture_output=True, text=True, timeout=timeout,
+             "--output-format", "json"],
+            cwd=config.BASE_DIR, capture_output=True, text=True, timeout=timeout, env=env,
         )
         result = ""
         try:
@@ -46,8 +50,12 @@ def run_agent(agente, objetivo, budget=1.0, timeout=600):
         except Exception:
             result = (proc.stdout or "")[-1500:]
         ok = proc.returncode == 0
+        _titulos = {"copywriter": "Copy que escribió", "busqueda": "Búsqueda realizada",
+                    "orquestador": "Campaña armada", "ejecutor": "Envíos"}
         activity.update(slot, "listo" if ok else "error",
-                        f"Claude Code · {agente}: {'terminó ✅' if ok else 'falló'}")
+                        f"Claude Code · {agente}: {'terminó ✅' if ok else 'falló'}",
+                        resultado=(result if ok else ((proc.stderr or result or "")[-1500:])),
+                        titulo=_titulos.get(slot, "Resultado"))
         return {"ok": ok, "resultado": result,
                 "error": (proc.stderr or "")[-500:] if not ok else None}
     except subprocess.TimeoutExpired:

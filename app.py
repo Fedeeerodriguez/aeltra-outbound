@@ -84,6 +84,16 @@ class ClaudeRunReq(BaseModel):
     agente: str = "aeltra-orquestador"
     objetivo: str
 
+class CrearManualReq(BaseModel):
+    objetivo: str = ""
+    nicho: str
+    pais: str = "Argentina"
+    cantidad: int = 25
+    ventana_horas: float = 6.0
+    asunto: str
+    cuerpo: str
+    fuentes: list = ["apify", "web"]
+
 
 # ── UI ──
 @app.get("/", response_class=HTMLResponse)
@@ -138,12 +148,67 @@ async def api_import(file: UploadFile = File(...)):
     return {"importados": n}
 
 
-# ── Campañas (orquestador) ──
-@app.post("/api/campanias/lanzar")
-async def api_lanzar(req: LanzarReq):
-    # el orquestador hace llamadas LLM (bloqueantes) → a threadpool
-    resumen = await run_in_threadpool(lanzar_campania, req.objetivo)
-    return resumen
+# ── Campañas ──
+# NOTA: /api/campanias/lanzar fue ELIMINADO. Usaba el LLM del motor (API con tokens).
+# Las campañas ahora las arma el orquestador .md con Claude Max y llaman a crear_manual.
+
+@app.post("/api/campanias/crear_manual")
+async def api_crear_manual(req: CrearManualReq):
+    """Crea una campaña SIN usar la API/LLM del motor: el copy ya viene escrito por un
+    agente de Claude Code (Claude Max). El motor solo busca prospectos (Apify), guarda la
+    plantilla con ese copy y encola los envíos paceados. Cero tokens de API."""
+    def _run():
+        from datetime import datetime, timedelta
+        brief = {"objetivo": req.objetivo or req.nicho, "nicho": req.nicho, "pais": req.pais,
+                 "cantidad": int(req.cantidad), "ventana_horas": float(req.ventana_horas),
+                 "fuentes": list(req.fuentes) or ["apify", "web"]}
+        activity.update("orquestador", "trabajando", f"Creando campaña «{req.nicho}» (Claude Max, sin API)…", 15)
+        cid = pipeline.create_campania(
+            nombre=f"Campaña {datetime.now():%Y-%m-%d %H:%M}",
+            objetivo=brief["objetivo"], brief=brief,
+            cantidad_objetivo=brief["cantidad"], ventana_horas=brief["ventana_horas"])
+        prospectos = search_agent.buscar(brief)
+        pid = pipeline.create_plantilla(cid, req.asunto, req.cuerpo, "A")
+        n = len(prospectos); ventana_h = brief["ventana_horas"]
+        intervalo = (ventana_h * 3600.0 / n) if n else 0
+        ahora = datetime.utcnow(); encolados = 0
+        for i, p in enumerate(prospectos):
+            sched = (ahora + timedelta(seconds=i * intervalo)).isoformat(timespec="seconds")
+            pipeline.enqueue_envio(p["contacto_id"], cid, pid, p["email"], sched)
+            encolados += 1
+        activity.update("orquestador", "listo",
+                        f"Campaña #{cid} lista ✅ {encolados} encolados (1 cada {round(intervalo)}s).", 100,
+                        resultado=(f"Campaña #{cid}\nObjetivo: {brief['objetivo']}\n"
+                                   f"Nicho: {req.nicho} · {req.pais}\n"
+                                   f"Encolados: {encolados} de {brief['cantidad']} "
+                                   f"(1 cada {round(intervalo)}s · ventana {ventana_h}h)\n\n"
+                                   f"Asunto: {req.asunto}\n\n{req.cuerpo}"),
+                        titulo=f"Campaña #{cid} armada")
+        return {"campania_id": cid, "encolados": encolados, "objetivo": brief["cantidad"],
+                "asunto": req.asunto, "intervalo_seg": round(intervalo, 1)}
+    return await run_in_threadpool(_run)
+
+
+@app.get("/api/campanias/{cid}")
+def api_campania_detalle(cid: int):
+    conn = get_conn()
+    try:
+        c = conn.execute("SELECT * FROM campanias WHERE id=?", (cid,)).fetchone()
+        if not c:
+            return JSONResponse({"error": "no existe"}, status_code=404)
+        pl = conn.execute("SELECT asunto,cuerpo,variante FROM plantillas "
+                          "WHERE campania_id=? ORDER BY id DESC LIMIT 1", (cid,)).fetchone()
+        counts = {}
+        for row in conn.execute("SELECT status, COUNT(*) n FROM envios "
+                                "WHERE campania_id=? GROUP BY status", (cid,)):
+            counts[row["status"]] = row["n"]
+        d = dict(c)
+        d["plantilla"] = dict(pl) if pl else None
+        d["envios"] = counts
+        d["total"] = sum(counts.values())
+        return d
+    finally:
+        conn.close()
 
 
 @app.post("/api/test-envio")
@@ -192,15 +257,11 @@ async def api_agente_chat(agente: str, req: ChatReq):
                              f"{brief['pais']} y los guardo en la base. NO envío nada. "
                              f"Seguí el progreso acá en la tarjeta."}
 
-    if agente == "copywriter":
-        brief = parse_brief(msg)
-        data = await run_in_threadpool(copywriter.escribir_email, brief)
-        return {"respuesta": f"Asunto: {data['asunto']}\n\n{data['cuerpo']}"}
-
-    if agente == "orquestador":
-        asyncio.create_task(_bg("orquestador", lanzar_campania, msg))
-        return {"respuesta": "Lancé la campaña completa: busco prospectos, escribo el copy y "
-                             "encolo los envíos paceados. Mirá el progreso arriba."}
+    if agente in ("copywriter", "orquestador"):
+        # ELIMINADO: estas ramas usaban el LLM del motor (API con tokens).
+        # El copy y la orquestación ahora los hace Claude Max vía /api/claude/run.
+        return {"respuesta": "Este agente ahora trabaja con Claude Max. "
+                             "Usá /api/claude/run (el front ya lo hace)."}
 
     if agente == "ejecutor":
         low = msg.lower()
