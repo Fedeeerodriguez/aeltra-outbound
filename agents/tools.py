@@ -35,6 +35,9 @@ def chequear_supresion(email: str) -> bool:
 def validar_email(email: str) -> bool:
     """Valida el formato de un email. True si es válido."""
     try:
+        from .prospect_sources import es_email_plausible
+        if not es_email_plausible(email):   # descarta assets tipo logo@2x.png
+            return False
         from email_validator import validate_email, EmailNotValidError
         validate_email(email, check_deliverability=False)
         return True

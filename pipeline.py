@@ -141,8 +141,9 @@ def stats():
         "contactos": one("SELECT COUNT(*) FROM contactos"),
         "prospectos": one("SELECT COUNT(*) FROM contactos WHERE estado='prospecto'"),
         "contactados": one("SELECT COUNT(*) FROM contactos WHERE estado='contactado'"),
-        "respondieron": one("SELECT COUNT(*) FROM contactos WHERE estado='respondió'"),
-        "clientes": one("SELECT COUNT(*) FROM contactos WHERE estado='cliente'"),
+        # OJO: los estados del pipeline son sin acento ('respondio') y 'cerrado' = cliente.
+        "respondieron": one("SELECT COUNT(*) FROM contactos WHERE estado IN ('respondio','reunion','cerrado')"),
+        "clientes": one("SELECT COUNT(*) FROM contactos WHERE estado='cerrado'"),
         "enviados": one("SELECT COUNT(*) FROM envios WHERE status='sent'"),
         "en_cola": one("SELECT COUNT(*) FROM envios WHERE status='queued'"),
         "fallidos": one("SELECT COUNT(*) FROM envios WHERE status='failed'"),

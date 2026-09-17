@@ -9,6 +9,23 @@ import config
 
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
 
+# Extensiones de archivos/assets que NO son dominios de email. Los sitios usan
+# nombres de imagen retina tipo "logo@2x.png" que matchean el patrón de email.
+_ASSET_TLDS = ("png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp",
+               "css", "js", "mp4", "webm", "woff", "woff2", "ttf", "eot", "pdf")
+
+def es_email_plausible(email: str) -> bool:
+    """Descarta assets (logo@2x.png), retina (@2x/@3x) y TLDs de archivo."""
+    e = (email or "").strip().lower()
+    if "@" not in e:
+        return False
+    dominio = e.rsplit("@", 1)[1]
+    if "@2x" in e or "@3x" in e:
+        return False
+    if dominio.rsplit(".", 1)[-1] in _ASSET_TLDS:
+        return False
+    return True
+
 
 def _mock(nicho, pais, cantidad):
     tipos = ["tienda", "shop", "store", "boutique", "market", "deco", "moda", "kids"]
@@ -83,8 +100,10 @@ def web_search(nicho, pais, cantidad):
 def _scrape_email(website):
     try:
         r = httpx.get(website, headers={"User-Agent": "Mozilla/5.0"}, timeout=15, follow_redirects=True)
-        m = EMAIL_RE.search(r.text)
-        return m.group(0).lower() if m else None
+        for m in EMAIL_RE.findall(r.text):        # 1er match plausible (no assets @2x.png)
+            if es_email_plausible(m):
+                return m.lower()
+        return None
     except Exception:
         return None
 
