@@ -1,0 +1,47 @@
+# Aeltra Outbound · Docker Compose para EasyPanel (o cualquier host con Docker).
+# El server + worker de envío paceado + scheduler de rutinas corren en el MISMO proceso.
+#
+# En EasyPanel: creá un servicio tipo "Compose", apuntá a este archivo y cargá las
+# variables (las de ${...}) en la pestaña Environment del servicio. NO subas el .env.
+services:
+  aeltra:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aeltra-outbound
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # ── Envío ──
+      SENDER_BACKEND: "${SENDER_BACKEND:-gmail_oauth}"
+      GMAIL_CLIENT_ID: "${GMAIL_CLIENT_ID}"
+      GMAIL_CLIENT_SECRET: "${GMAIL_CLIENT_SECRET}"
+      GMAIL_REFRESH_TOKEN: "${GMAIL_REFRESH_TOKEN}"
+      GMAIL_SENDER: "${GMAIL_SENDER}"
+      FROM_NAME: "${FROM_NAME:-Aeltra}"
+      FROM_EMAIL: "${FROM_EMAIL}"
+      # ── Prospección ──
+      PROSPECTS_MOCK: "${PROSPECTS_MOCK:-false}"
+      APIFY_TOKEN: "${APIFY_TOKEN}"
+      GOOGLE_MAPS_API_KEY: "${GOOGLE_MAPS_API_KEY}"
+      # ── Seguridad / compliance (IMPORTANTES en producción) ──
+      BASIC_AUTH_USER: "${BASIC_AUTH_USER}"
+      BASIC_AUTH_PASS: "${BASIC_AUTH_PASS}"
+      UNSUB_BASE: "${UNSUB_BASE}"          # ej: https://tu-dominio/api/baja  (NO localhost)
+      # ── Ritmo ──
+      DEFAULT_WINDOW_HOURS: "${DEFAULT_WINDOW_HOURS:-6}"
+      DAILY_SEND_CAP: "${DAILY_SEND_CAP:-40}"
+      # ── Persistencia (la base vive en el volumen de abajo) ──
+      DB_PATH: "/data/aeltra.db"
+    volumes:
+      - aeltra-data:/data                  # SQLite persiste entre reinicios/deploys
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  aeltra-data:

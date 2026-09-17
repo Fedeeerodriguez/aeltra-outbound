@@ -108,6 +108,20 @@ def home():
     return FileResponse(INDEX)
 
 
+@app.get("/api/health")
+def api_health():
+    """Healthcheck para EasyPanel/Docker + diagnóstico rápido del entorno."""
+    return {
+        "ok": True,
+        "sender_ready": config.sender_ready(),        # ¿puede enviar mails?
+        "sender_backend": config.SENDER_BACKEND,
+        "prospects_mock": config.PROSPECTS_MOCK,       # False = scrapea real
+        "claude_max_cli": bool(claude_bridge.CLAUDE_BIN),  # False en container: agentes IA no piensan acá
+        "daily_cap": config.DAILY_SEND_CAP,
+        "enviados_hoy": pipeline.enviados_hoy(),
+    }
+
+
 # ── Pipeline ──
 @app.get("/api/stats")
 def api_stats():

@@ -2,11 +2,13 @@
 __pycache__/
 *.pyc
 .env
+*.db
 aeltra.db
 aeltra.db-wal
 aeltra.db-shm
 .git/
 .gitignore
+.claude/
 client_secret.json
 token.json
 *.log

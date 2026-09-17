@@ -98,6 +98,15 @@ def due_envios(now_iso, limit=25):
     conn.close()
     return [dict(r) for r in rows]
 
+def enviados_hoy():
+    """Cuántos correos se enviaron HOY (UTC). Para el tope diario de seguridad."""
+    conn = get_conn()
+    hoy = datetime.utcnow().strftime("%Y-%m-%d")
+    r = conn.execute("SELECT COUNT(*) FROM envios WHERE status='sent' AND substr(sent_at,1,10)=?",
+                     (hoy,)).fetchone()
+    conn.close()
+    return r[0] if r else 0
+
 def mark_envio(envio_id, status, message_id=None, error=None):
     conn = get_conn()
     conn.execute(

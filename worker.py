@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime
 
 import activity
+import config
 import pipeline
 from db import get_conn
 from agents.emailing import enviar_core
@@ -40,9 +41,19 @@ def process_once(limit=10) -> int:
     """Envía los correos vencidos. Devuelve cuántos procesó."""
     if PAUSED:
         return 0
+    # Tope diario de seguridad (Gmail banea si te pasás). Los que sobran quedan en cola.
+    cap = config.DAILY_SEND_CAP
+    ya = pipeline.enviados_hoy() if cap else 0
+    if cap and ya >= cap:
+        activity.update("ejecutor", "idle",
+                        f"⏸ Tope diario alcanzado ({ya}/{cap}). Sigo mañana; la cola queda intacta.")
+        return 0
+    restante = (cap - ya) if cap else None
     now = datetime.utcnow().isoformat(timespec="seconds")
     due = pipeline.due_envios(now, limit)
     for e in due:
+        if restante is not None and restante <= 0:
+            break                          # llegamos al tope: el resto espera a mañana
         pl = _load_plantilla(e["plantilla_id"])
         c = _load_contacto(e["contacto_id"])
         if not pl or not c:
@@ -55,6 +66,8 @@ def process_once(limit=10) -> int:
         )
         pipeline.mark_envio(e["id"], res["status"], res.get("message_id"), res.get("error"))
         if res["status"] == "sent":
+            if restante is not None:
+                restante -= 1                          # descuenta del tope diario
             pipeline.marcar_enviado(c["id"])           # pasa al estado 'enviado' del pipeline
             pipeline.log_agente("ejecutor", f"Envío a {c['email']}", f"Asunto: {pl['asunto']}", True)
             activity.update("ejecutor", "trabajando", f"✅ Enviado a {c['email']}")
