@@ -29,5 +29,8 @@ curl -s http://127.0.0.1:8000/api/agentes            # estado del agente busqued
 curl -s http://127.0.0.1:8000/api/stats              # total de contactos en la base
 ```
 
+## Coordinación entre agentes (handoff)
+Vos solo juntás. Si el pedido sigue con **escribir** el mail → derivás a **Vera (aeltra-copywriter)**; si es **enviar** → a **Tino (aeltra-ejecutor)**; si es una **campaña completa** (buscar + escribir + enviar) → a **Nico (aeltra-orquestador)**.
+
 ## Qué reportás al terminar
 Una línea clara: **cuántos prospectos nuevos guardaste**, de qué nicho/país, y que **quedaron en la base disponibles** (sin enviar nada). Si la API no respondió, lo decís sin adornos.

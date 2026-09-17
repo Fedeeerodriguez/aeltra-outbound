@@ -94,6 +94,13 @@ class CrearManualReq(BaseModel):
     cuerpo: str
     fuentes: list = ["apify", "web"]
 
+class EnviarUnoReq(BaseModel):
+    email: str
+    nombre: str = ""
+    asunto: str
+    cuerpo: str
+    empresa: str = ""
+
 
 # ── UI ──
 @app.get("/", response_class=HTMLResponse)
@@ -317,6 +324,29 @@ async def api_agente_chat(agente: str, req: ChatReq):
                              f"{st['fallidos']} fallidos. Decime «pausá» o «reanudá» para controlarme."}
 
     return {"respuesta": "No conozco ese agente."}
+
+
+@app.post("/api/agentes/enviar")
+def api_enviar_uno(req: EnviarUnoReq):
+    """Función de Tino (Envía mails): manda UN mail ya escrito por otro agente. Sin LLM.
+    Es el punto de handoff: p.ej. Vera escribe el copy y deriva acá para que Tino lo envíe."""
+    c = pipeline.find_contact_by_email(req.email)
+    cid = c["id"] if c else pipeline.add_contact(req.nombre or "", req.email,
+                                                 empresa=(req.empresa or None), estado="prospecto")
+    activity.update("ejecutor", "trabajando", f"Enviando a {req.email}…")
+    res = enviar_core(req.email, req.nombre or "", req.asunto, req.cuerpo,
+                      variables={"empresa": req.empresa}, contacto_id=cid)
+    if res.get("status") == "sent":
+        pipeline.marcar_enviado(cid)
+        pipeline.log_agente("ejecutor", f"Envío a {req.email}", f"Asunto: {req.asunto}", True)
+        activity.update("ejecutor", "listo", f"✅ Enviado a {req.email}",
+                        resultado=f"Enviado a {req.email}\nAsunto: {req.asunto}\n\n{req.cuerpo}",
+                        titulo="Envío realizado")
+    else:
+        pipeline.log_agente("ejecutor", f"Envío a {req.email}", str(res.get("error")), False)
+        activity.update("ejecutor", "error", f"❌ Falló {req.email}: {res.get('error','')}",
+                        resultado=str(res.get("error")), titulo="Envío falló")
+    return res
 
 
 # ── Rutinas automáticas (scheduler) ──
