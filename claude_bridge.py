@@ -52,10 +52,15 @@ def run_agent(agente, objetivo, budget=1.0, timeout=600):
         ok = proc.returncode == 0
         _titulos = {"copywriter": "Copy que escribió", "busqueda": "Búsqueda realizada",
                     "orquestador": "Campaña armada", "ejecutor": "Envíos"}
+        res_txt = result if ok else ((proc.stderr or result or "")[-1500:])
         activity.update(slot, "listo" if ok else "error",
                         f"Claude Code · {agente}: {'terminó ✅' if ok else 'falló'}",
-                        resultado=(result if ok else ((proc.stderr or result or "")[-1500:])),
-                        titulo=_titulos.get(slot, "Resultado"))
+                        resultado=res_txt, titulo=_titulos.get(slot, "Resultado"))
+        try:
+            import pipeline
+            pipeline.log_agente(slot, objetivo, res_txt, ok)
+        except Exception:
+            pass
         return {"ok": ok, "resultado": result,
                 "error": (proc.stderr or "")[-500:] if not ok else None}
     except subprocess.TimeoutExpired:

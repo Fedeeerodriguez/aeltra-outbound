@@ -89,7 +89,10 @@ def disparar_ya(rid):
     return True
 
 
+_last_auto = None
+
 async def run_loop(poll_seconds=30):
+    global _last_auto
     while True:
         try:
             now, hoy = _ahora_hm(), _hoy()
@@ -97,6 +100,16 @@ async def run_loop(poll_seconds=30):
                 if r.get("frecuencia", "diaria") == "diaria" and r.get("ultimo_run") != hoy and now >= (r.get("hora") or "99:99"):
                     _set_ultimo(r["id"], hoy)
                     asyncio.create_task(asyncio.to_thread(_fire_safe, r))
+            # regla automática: 'enviado' sin respuesta → 'no_respondio' a los 3 días hábiles (1 vez por día)
+            if _last_auto != hoy:
+                _last_auto = hoy
+                try:
+                    import pipeline
+                    n = pipeline.auto_no_respondio()
+                    if n:
+                        print(f"[pipeline] {n} contactos -> no_respondio (3 dias habiles)")
+                except Exception as e:
+                    print("[pipeline auto] error:", e)
         except Exception as e:
             print("[scheduler] error:", e)
         await asyncio.sleep(poll_seconds)

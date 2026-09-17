@@ -55,7 +55,8 @@ def process_once(limit=10) -> int:
         )
         pipeline.mark_envio(e["id"], res["status"], res.get("message_id"), res.get("error"))
         if res["status"] == "sent":
-            pipeline.set_estado(c["id"], "contactado")
+            pipeline.marcar_enviado(c["id"])           # pasa al estado 'enviado' del pipeline
+            pipeline.log_agente("ejecutor", f"Envío a {c['email']}", f"Asunto: {pl['asunto']}", True)
             activity.update("ejecutor", "trabajando", f"✅ Enviado a {c['email']}")
         elif res["status"] == "failed":
             activity.update("ejecutor", "error", f"❌ Falló {c['email']}: {res.get('error','')}")

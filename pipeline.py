@@ -151,3 +151,99 @@ def stats():
     }
     conn.close()
     return data
+
+
+# ── Historial de agentes (persistente) ──
+def log_agente(agente, accion, resultado="", ok=True):
+    conn = get_conn()
+    conn.execute("INSERT INTO agente_historial (agente,accion,resultado,ok) VALUES (?,?,?,?)",
+                 (agente, (accion or "")[:400], (resultado or "")[:4000], 1 if ok else 0))
+    conn.commit()
+    conn.close()
+
+def historial_agente(agente, limit=40):
+    conn = get_conn()
+    rows = conn.execute("SELECT accion,resultado,ok,created_at FROM agente_historial "
+                        "WHERE agente=? ORDER BY id DESC LIMIT ?", (agente, limit)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# ── Pipeline (estados de cliente) ──
+PIPELINE_ESTADOS = ["prospecto", "enviado", "respondio", "no_respondio",
+                    "seguimiento", "reunion", "cerrado", "perdido"]
+
+def mover_contacto(cid, estado):
+    conn = get_conn()
+    conn.execute("UPDATE contactos SET estado=?, estado_ts=datetime('now') WHERE id=?", (estado, cid))
+    conn.commit()
+    conn.close()
+
+def marcar_enviado(contacto_id):
+    conn = get_conn()
+    conn.execute("UPDATE contactos SET estado='enviado', estado_ts=datetime('now') "
+                 "WHERE id=? AND estado IN ('prospecto','contactado')", (contacto_id,))
+    conn.commit()
+    conn.close()
+
+def contactos_pipeline():
+    conn = get_conn()
+    rows = conn.execute("SELECT id,nombre,email,empresa,nicho,estado,estado_ts,campania_id "
+                        "FROM contactos ORDER BY id DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def metricas():
+    conn = get_conn()
+    def scalar(q, *a):
+        r = conn.execute(q, a).fetchone()
+        return (list(r)[0] if r else 0) or 0
+    por_estado = {row["estado"]: row["n"] for row in
+                  conn.execute("SELECT estado,COUNT(*) n FROM contactos GROUP BY estado")}
+    camps = []
+    for c in conn.execute("SELECT id,nombre,objetivo,estado FROM campanias ORDER BY id DESC"):
+        cid = c["id"]
+        env = scalar("SELECT COUNT(*) FROM envios WHERE campania_id=? AND status='sent'", cid)
+        cola = scalar("SELECT COUNT(*) FROM envios WHERE campania_id=? AND status='queued'", cid)
+        exitos = scalar("SELECT COUNT(*) FROM contactos WHERE campania_id=? "
+                        "AND estado IN ('respondio','reunion','cerrado')", cid)
+        camps.append({"id": cid, "nombre": c["nombre"], "objetivo": c["objetivo"], "estado": c["estado"],
+                      "enviados": env, "en_cola": cola, "exitos": exitos,
+                      "tasa": (round(100 * exitos / env, 1) if env else 0)})
+    data = {
+        "total_contactos": scalar("SELECT COUNT(*) FROM contactos"),
+        "por_estado": por_estado,
+        "respondio": por_estado.get("respondio", 0) + por_estado.get("reunion", 0) + por_estado.get("cerrado", 0),
+        "reuniones": por_estado.get("reunion", 0),
+        "clientes": por_estado.get("cerrado", 0),
+        "enviados": scalar("SELECT COUNT(*) FROM envios WHERE status='sent'"),
+        "campanias": camps,
+    }
+    conn.close()
+    return data
+
+def auto_no_respondio(dias_habiles=3):
+    """Mueve contactos 'enviado' sin respuesta a 'no_respondio' tras N días hábiles."""
+    from datetime import timedelta
+    conn = get_conn()
+    movidos = 0
+    hoy = datetime.utcnow().date()
+    for r in conn.execute("SELECT id,estado_ts FROM contactos WHERE estado='enviado'").fetchall():
+        ts = r["estado_ts"]
+        if not ts:
+            continue
+        try:
+            base = datetime.fromisoformat(ts.replace(" ", "T")).date()
+        except Exception:
+            continue
+        habiles, cur = 0, base
+        while cur < hoy:
+            cur = cur + timedelta(days=1)
+            if cur.weekday() < 5:
+                habiles += 1
+        if habiles >= dias_habiles:
+            conn.execute("UPDATE contactos SET estado='no_respondio', estado_ts=datetime('now') WHERE id=?", (r["id"],))
+            movidos += 1
+    conn.commit()
+    conn.close()
+    return movidos

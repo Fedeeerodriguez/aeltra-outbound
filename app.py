@@ -176,6 +176,16 @@ async def api_crear_manual(req: CrearManualReq):
             sched = (ahora + timedelta(seconds=i * intervalo)).isoformat(timespec="seconds")
             pipeline.enqueue_envio(p["contacto_id"], cid, pid, p["email"], sched)
             encolados += 1
+        try:
+            ids = [p.get("contacto_id") for p in prospectos if p.get("contacto_id")]
+            if ids:
+                conn = get_conn()
+                conn.executemany("UPDATE contactos SET campania_id=? WHERE id=?", [(cid, i) for i in ids])
+                conn.commit(); conn.close()
+        except Exception:
+            pass
+        pipeline.log_agente("orquestador", f"Campaña: {req.objetivo or req.nicho}",
+                            f"Encolados {encolados}. Asunto: {req.asunto}")
         activity.update("orquestador", "listo",
                         f"Campaña #{cid} lista ✅ {encolados} encolados (1 cada {round(intervalo)}s).", 100,
                         resultado=(f"Campaña #{cid}\nObjetivo: {brief['objetivo']}\n"
@@ -209,6 +219,37 @@ def api_campania_detalle(cid: int):
         return d
     finally:
         conn.close()
+
+
+# ── Pipeline (estados de cliente) ──
+class MoverReq(BaseModel):
+    id: int
+    estado: str
+
+@app.get("/api/pipeline")
+def api_pipeline():
+    return {"estados": pipeline.PIPELINE_ESTADOS, "contactos": pipeline.contactos_pipeline()}
+
+@app.post("/api/pipeline/mover")
+def api_pipeline_mover(req: MoverReq):
+    pipeline.mover_contacto(req.id, req.estado)
+    return {"ok": True}
+
+@app.post("/api/pipeline/auto")
+def api_pipeline_auto():
+    return {"movidos": pipeline.auto_no_respondio()}
+
+
+# ── Dashboard (métricas) ──
+@app.get("/api/dashboard")
+def api_dashboard():
+    return pipeline.metricas()
+
+
+# ── Historial por agente ──
+@app.get("/api/agentes/{slot}/historial")
+def api_historial(slot: str):
+    return pipeline.historial_agente(slot)
 
 
 @app.post("/api/test-envio")

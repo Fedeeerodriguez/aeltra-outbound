@@ -77,7 +77,17 @@ CREATE TABLE IF NOT EXISTS rutinas (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS agente_historial (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agente TEXT,             -- orquestador | busqueda | copywriter | ejecutor
+    accion TEXT,             -- qué se le pidió / qué hizo
+    resultado TEXT,          -- resultado (texto largo)
+    ok INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_envios_due ON envios(status, scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_hist_ag ON agente_historial(agente, id);
 """
 
 def get_conn():
@@ -90,10 +100,15 @@ def init_db():
     conn = get_conn()
     conn.executescript(SCHEMA)
     # migración suave para bases viejas
-    try:
-        conn.execute("ALTER TABLE rutinas ADD COLUMN motor TEXT DEFAULT 'engine'")
-    except Exception:
-        pass
+    for stmt in (
+        "ALTER TABLE rutinas ADD COLUMN motor TEXT DEFAULT 'engine'",
+        "ALTER TABLE contactos ADD COLUMN estado_ts TEXT",   # cuándo cambió de estado
+        "ALTER TABLE contactos ADD COLUMN campania_id INTEGER",
+    ):
+        try:
+            conn.execute(stmt)
+        except Exception:
+            pass
     conn.commit()
     conn.close()
 

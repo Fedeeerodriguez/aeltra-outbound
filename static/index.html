@@ -125,6 +125,18 @@ img{image-rendering:pixelated}
 .respop{position:absolute;left:50%;top:20px;transform:translateX(-50%);width:min(560px,86%);z-index:12;pointer-events:auto;font-size:16px}
 .respop .body{max-height:420px;overflow:auto}
 .respop pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:"VT323",monospace;font-size:18px;line-height:1.35;color:#12324e}
+/* ---- pipeline kanban ---- */
+.pcol{flex:1;min-width:150px;background:#e7ead4;border:2px solid #000;box-shadow:inset -2px -2px 0 var(--lo),inset 2px 2px 0 var(--hi);padding:6px;align-self:flex-start}
+.pcol h4{margin:0 0 6px;font-size:9px;font-family:"Press Start 2P";color:#12324e;text-align:center;padding:5px 2px;border-bottom:2px solid #b7b09a;line-height:1.4}
+.pcol h4 span{color:#0f7a5a}
+.pcard{background:#fff;border:2px solid #000;padding:5px 7px;margin-bottom:6px;font-size:15px}
+.pcard b{color:#12324e}.pcard .em{color:#777;font-size:12px;display:block;word-break:break-all;margin:1px 0 3px}
+.pcard select{width:100%;font-family:inherit;font-size:13px;border:2px solid #000;background:#fcfcfc;padding:2px}
+/* ---- historial en el diálogo ---- */
+.hist{margin-top:8px;border-top:1px dashed #b7b09a;padding-top:6px;max-height:120px;overflow:auto}
+.hist .h{font-size:13px;color:#333;margin:3px 0;line-height:1.25}
+.hist .h b{color:#12324e}.hist .h em{font-style:normal;color:#888;font-size:11px}
+.hist .h.err b{color:#b03730}
 
 /* ---- ventana de diálogo (abre al click en el avatar) ---- */
 .owin{position:absolute;z-index:9;width:280px;font-size:16px}
@@ -185,6 +197,8 @@ img{image-rendering:pixelated}
       <div class="list">
         <div class="navitem" data-v="panel"><span class="i"></span> Panel</div>
         <div class="navitem on" data-v="agentes"><span class="i"></span> Agentes</div>
+        <div class="navitem" data-v="dashboard"><span class="i"></span> Dashboard</div>
+        <div class="navitem" data-v="pipeline"><span class="i"></span> Pipeline</div>
         <div class="navitem" data-v="campanias"><span class="i"></span> Campañas</div>
         <div class="navitem" data-v="contactos"><span class="i"></span> Contactos</div>
         <div class="navitem" data-v="rutinas"><span class="i"></span> Rutinas</div>
@@ -211,6 +225,7 @@ img{image-rendering:pixelated}
               <div class="body">
                 <div class="lines" id="dlg-lines"></div>
                 <div class="chatline" style="margin-top:8px"><input class="inp" id="dlg-in" placeholder="Hablale…"><button class="b" id="dlg-send">Enviar</button></div>
+                <div class="hist" id="dlg-hist"></div>
               </div>
             </div>
 
@@ -318,6 +333,28 @@ img{image-rendering:pixelated}
     </div></div></section>
     <section class="view" id="v-contactos"><div class="win"><div class="head">CONTACTOS<span class="x">X</span></div><div class="body" id="list-contactos">Cargando…</div></div></section>
     <section class="view" id="v-rutinas"><div class="win"><div class="head">RUTINAS<span class="x">X</span></div><div class="body" id="list-rutinas">Cargando…</div></div></section>
+
+    <!-- ===== DASHBOARD ===== -->
+    <section class="view" id="v-dashboard">
+      <div class="win"><div class="head"><span class="dot"></span> DASHBOARD <span class="x">X</span></div><div class="body">
+        <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+          <div class="kpi"><div class="k">Contactos</div><div class="v" id="db-contactos">0</div></div>
+          <div class="kpi"><div class="k">Enviados</div><div class="v" id="db-enviados">0</div></div>
+          <div class="kpi"><div class="k">Respuestas/Agendas</div><div class="v" id="db-resp">0</div></div>
+          <div class="kpi"><div class="k">Clientes</div><div class="v" id="db-clientes">0</div></div>
+        </div>
+        <p class="lbl">Cómo le fue a cada campaña (éxito = respuestas/agendas)</p>
+        <div id="db-camps">Cargando…</div>
+      </div></div>
+    </section>
+
+    <!-- ===== PIPELINE ===== -->
+    <section class="view" id="v-pipeline">
+      <div class="win"><div class="head"><span class="dot"></span> PIPELINE <span class="badge" style="margin-left:8px"><span class="d"></span>CLIENTES</span><span class="x">X</span></div><div class="body">
+        <p class="hint" style="color:#777;margin:0 0 12px">Estado de cada cliente. Los "enviado" sin respuesta pasan solos a "no respondió" a los 3 días hábiles. Cambiá el estado con los botones de cada tarjeta.</p>
+        <div class="roomwrap"><div id="pipe-cols" style="display:flex;gap:12px;min-width:900px">Cargando…</div></div>
+      </div></div>
+    </section>
   </main>
 </div>
 
@@ -573,6 +610,7 @@ img{image-rendering:pixelated}
     $('dlg-in').placeholder='Hablale a '+d.nm+'…';
     placeDialog(a); dialog.hidden=false;
     dialog.style.animation='none'; void dialog.offsetWidth; dialog.style.animation='';
+    loadHist(a);
   }
   function markSel(a){ ORDER.forEach(x=>$('name-'+x).classList.toggle('sel',x===a)); }
   function pick(a,open=true){
@@ -762,6 +800,43 @@ img{image-rendering:pixelated}
     $('respop').hidden=false;
   }catch(e){} }
   window._verCampania=verCampania;
+
+  /* ==== historial por agente (dentro del diálogo) ==== */
+  function loadHist(a){ const slot=MAP[a], box=$('dlg-hist'); if(!box)return; box.innerHTML='';
+    fetch('/api/agentes/'+slot+'/historial').then(r=>r.json()).then(rows=>{
+      if(!rows||!rows.length){ box.innerHTML='<div class="h" style="color:#999">Sin acciones registradas todavía.</div>'; return; }
+      box.innerHTML='<div class="h" style="color:#12324e"><b>Historial</b></div>'+
+        rows.map(x=>`<div class="h ${x.ok?'':'err'}"><em>${(x.created_at||'').slice(0,16).replace('T',' ')}</em> · <b>${(x.accion||'').slice(0,52)}</b>`+
+          (x.resultado?` · <a href="#" data-r="${encodeURIComponent(x.resultado)}" onclick="_verHist(this);return false">ver</a>`:'')+`</div>`).join('');
+    }).catch(()=>{});
+  }
+  window._verHist=function(el){ $('respop-hd').textContent='Resultado'; $('respop-body').textContent=decodeURIComponent(el.dataset.r); $('respop').hidden=false; };
+
+  /* ==== Dashboard (métricas) ==== */
+  async function loadDashboard(){ try{ const m=await (await fetch('/api/dashboard')).json();
+    const set=(id,v)=>{const e=$(id);if(e)e.textContent=(v==null?0:v);};
+    set('db-contactos',m.total_contactos); set('db-enviados',m.enviados); set('db-resp',m.respondio); set('db-clientes',m.clientes);
+    const box=$('db-camps'); if(!box)return;
+    if(!m.campanias||!m.campanias.length){ box.innerHTML='<p class="hint" style="color:#777">Sin campañas todavía.</p>'; return; }
+    box.innerHTML='<table class="htable"><thead><tr><th>#</th><th>Campaña</th><th>Enviados</th><th>En cola</th><th>Éxitos</th><th>Tasa</th></tr></thead><tbody>'+
+      m.campanias.map(c=>`<tr style="cursor:pointer" onclick="_verCampania(${c.id})"><td>${c.id}</td><td>${c.nombre||''}</td><td>${c.enviados}</td><td>${c.en_cola}</td><td>${c.exitos}</td><td><b>${c.tasa}%</b></td></tr>`).join('')+'</tbody></table>';
+  }catch(e){} }
+
+  /* ==== Pipeline (kanban por estado) ==== */
+  const PIPE_LABEL={prospecto:'Prospecto',enviado:'Enviado',respondio:'Respondió',no_respondio:'No respondió',seguimiento:'En seguimiento',reunion:'Reunión agendada',cerrado:'Cerrado',perdido:'Perdido'};
+  async function loadPipeline(){ try{ const d=await (await fetch('/api/pipeline')).json();
+    const cols=$('pipe-cols'); if(!cols)return; const estados=d.estados||[]; const byEst={}; estados.forEach(e=>byEst[e]=[]);
+    (d.contactos||[]).forEach(c=>{ (byEst[c.estado]||(byEst[c.estado]=[])).push(c); });
+    cols.innerHTML=estados.map(e=>{ const items=byEst[e]||[];
+      return `<div class="pcol"><h4>${PIPE_LABEL[e]||e}<br><span>${items.length}</span></h4>`+
+        items.map(c=>`<div class="pcard"><b>${c.empresa||c.nombre||'—'}</b><span class="em">${c.email||''}</span>`+
+          `<select onchange="_mover(${c.id},this.value)">`+estados.map(x=>`<option value="${x}" ${x===c.estado?'selected':''}>${PIPE_LABEL[x]||x}</option>`).join('')+`</select></div>`).join('')+
+        `</div>`; }).join('');
+  }catch(e){} }
+  window._mover=async function(id,estado){ try{ await fetch('/api/pipeline/mover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,estado:estado})}); loadPipeline(); }catch(e){} };
+
+  navs.forEach(n=>n.addEventListener('click',()=>{ const v=n.dataset.v;
+    if(v==='dashboard')loadDashboard(); if(v==='pipeline')loadPipeline(); }));
 </script>
 </body>
 </html>
