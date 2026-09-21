@@ -6,7 +6,10 @@ import os
 import re
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+SCOPES = [
+    "https://www.googleapis.com/auth/gmail.send",       # enviar
+    "https://www.googleapis.com/auth/gmail.readonly",   # leer respuestas/rebotes
+]
 BASE = os.path.dirname(os.path.abspath(__file__))
 CLIENT_FILE = os.path.join(BASE, "client_secret.json")
 ENV_FILE = os.path.join(BASE, ".env")

@@ -69,6 +69,13 @@ def smtp_ready() -> bool:
 def imap_ready() -> bool:
     return bool(IMAP_USER and IMAP_PASS)
 
+def gmail_oauth_ready() -> bool:
+    return bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN)
+
+def reply_read_ready() -> bool:
+    """¿Puede leer respuestas? Por Gmail API (OAuth) o por IMAP."""
+    return gmail_oauth_ready() or imap_ready()
+
 def sender_ready() -> bool:
     if SENDER_BACKEND == "gmail_oauth":
         return bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN)

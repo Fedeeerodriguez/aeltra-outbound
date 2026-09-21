@@ -97,7 +97,6 @@ CREATE TABLE IF NOT EXISTS kv (
 
 CREATE INDEX IF NOT EXISTS idx_envios_due ON envios(status, scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_hist_ag ON agente_historial(agente, id);
-CREATE INDEX IF NOT EXISTS idx_envios_seq ON envios(contacto_id, campania_id, paso);
 """
 
 def get_conn():
@@ -124,6 +123,11 @@ def init_db():
             conn.execute(stmt)
         except Exception:
             pass
+    # índice que depende de la columna 'paso' (después de las migraciones)
+    try:
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_envios_seq ON envios(contacto_id, campania_id, paso)")
+    except Exception:
+        pass
     conn.commit()
     conn.close()
 

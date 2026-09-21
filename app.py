@@ -132,7 +132,8 @@ def api_health():
         "sender_backend": config.SENDER_BACKEND,
         "prospects_mock": config.PROSPECTS_MOCK,       # False = scrapea real
         "claude_max_cli": bool(claude_bridge.CLAUDE_BIN),  # False en container: agentes IA no piensan acá
-        "imap_ready": config.imap_ready(),                 # ¿puede leer respuestas?
+        "reply_read": config.reply_read_ready(),           # ¿puede leer respuestas? (OAuth o IMAP)
+        "reply_backend": ("gmail" if config.gmail_oauth_ready() else "imap" if config.imap_ready() else None),
         "daily_cap": config.DAILY_SEND_CAP,
         "enviados_hoy": pipeline.enviados_hoy(),
     }
