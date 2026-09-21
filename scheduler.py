@@ -90,9 +90,10 @@ def disparar_ya(rid):
 
 
 _last_auto = None
+_loops = 0
 
 async def run_loop(poll_seconds=30):
-    global _last_auto
+    global _last_auto, _loops
     while True:
         try:
             now, hoy = _ahora_hm(), _hoy()
@@ -100,6 +101,26 @@ async def run_loop(poll_seconds=30):
                 if r.get("frecuencia", "diaria") == "diaria" and r.get("ultimo_run") != hoy and now >= (r.get("hora") or "99:99"):
                     _set_ultimo(r["id"], hoy)
                     asyncio.create_task(asyncio.to_thread(_fire_safe, r))
+
+            # motor de secuencia (drip): encola follow-ups condicionales — cada ciclo
+            try:
+                import secuencia
+                enc = await asyncio.to_thread(secuencia.avanzar)
+                if enc:
+                    print(f"[secuencia] {enc} follow-ups encolados")
+            except Exception as e:
+                print("[secuencia] error:", e)
+
+            # lectura de respuestas por IMAP — cada ~3 min (6 ciclos de 30s)
+            if _loops % 6 == 0:
+                try:
+                    import inbox as _inbox
+                    res = await asyncio.to_thread(_inbox.revisar)
+                    if res.get("ok") and (res.get("respondieron") or res.get("rebotes")):
+                        print(f"[inbox] respuestas={res.get('respondieron')} rebotes={res.get('rebotes')}")
+                except Exception as e:
+                    print("[inbox] error:", e)
+
             # regla automática: 'enviado' sin respuesta → 'no_respondio' a los 3 días hábiles (1 vez por día)
             if _last_auto != hoy:
                 _last_auto = hoy
@@ -112,4 +133,5 @@ async def run_loop(poll_seconds=30):
                     print("[pipeline auto] error:", e)
         except Exception as e:
             print("[scheduler] error:", e)
+        _loops += 1
         await asyncio.sleep(poll_seconds)

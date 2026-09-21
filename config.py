@@ -36,6 +36,13 @@ PROSPECTS_MOCK = _b(os.getenv("PROSPECTS_MOCK"), True)
 APIFY_TOKEN = os.getenv("APIFY_TOKEN", "")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 
+# IMAP (lectura de la casilla para detectar RESPUESTAS y rebotes)
+# Con Gmail: activá IMAP en la cuenta y usá un App Password (16 caracteres) acá.
+IMAP_HOST = os.getenv("IMAP_HOST", "imap.gmail.com")
+IMAP_PORT = int(os.getenv("IMAP_PORT", "993"))
+IMAP_USER = os.getenv("IMAP_USER", "") or os.getenv("GMAIL_SENDER", "") or os.getenv("SMTP_USER", "")
+IMAP_PASS = os.getenv("IMAP_PASS", "")
+
 # Auth (protege la app cuando está deployada; vacío = sin auth para local)
 BASIC_AUTH_USER = os.getenv("BASIC_AUTH_USER", "")
 BASIC_AUTH_PASS = os.getenv("BASIC_AUTH_PASS", "")
@@ -58,6 +65,9 @@ def llm_ready() -> bool:
 
 def smtp_ready() -> bool:
     return bool(SMTP_USER and SMTP_PASS)
+
+def imap_ready() -> bool:
+    return bool(IMAP_USER and IMAP_PASS)
 
 def sender_ready() -> bool:
     if SENDER_BACKEND == "gmail_oauth":

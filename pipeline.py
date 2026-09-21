@@ -47,12 +47,14 @@ def set_estado(contacto_id, estado):
     conn.close()
 
 # ── Campañas / plantillas ──
-def create_campania(nombre, objetivo, brief, cantidad_objetivo, ventana_horas):
+def create_campania(nombre, objetivo, brief, cantidad_objetivo, ventana_horas,
+                    tipo="simple", pasos_json=None):
     conn = get_conn()
     cur = conn.execute(
-        """INSERT INTO campanias (nombre,objetivo,brief_json,estado,cantidad_objetivo,ventana_horas)
-           VALUES (?,?,?, 'activa', ?, ?)""",
-        (nombre, objetivo, json.dumps(brief, ensure_ascii=False), cantidad_objetivo, ventana_horas),
+        """INSERT INTO campanias (nombre,objetivo,brief_json,estado,cantidad_objetivo,ventana_horas,tipo,pasos_json)
+           VALUES (?,?,?, 'activa', ?, ?, ?, ?)""",
+        (nombre, objetivo, json.dumps(brief, ensure_ascii=False), cantidad_objetivo, ventana_horas,
+         tipo, json.dumps(pasos_json, ensure_ascii=False) if pasos_json is not None else None),
     )
     conn.commit()
     cid = cur.lastrowid
@@ -65,11 +67,11 @@ def set_campania_estado(campania_id, estado):
     conn.commit()
     conn.close()
 
-def create_plantilla(campania_id, asunto, cuerpo, variante="A"):
+def create_plantilla(campania_id, asunto, cuerpo, variante="A", paso=1):
     conn = get_conn()
     cur = conn.execute(
-        "INSERT INTO plantillas (campania_id,variante,asunto,cuerpo) VALUES (?,?,?,?)",
-        (campania_id, variante, asunto, cuerpo),
+        "INSERT INTO plantillas (campania_id,variante,asunto,cuerpo,paso) VALUES (?,?,?,?,?)",
+        (campania_id, variante, asunto, cuerpo, paso),
     )
     conn.commit()
     pid = cur.lastrowid
@@ -77,12 +79,12 @@ def create_plantilla(campania_id, asunto, cuerpo, variante="A"):
     return pid
 
 # ── Envíos (cola paceada) ──
-def enqueue_envio(contacto_id, campania_id, plantilla_id, email, scheduled_at):
+def enqueue_envio(contacto_id, campania_id, plantilla_id, email, scheduled_at, paso=1):
     conn = get_conn()
     cur = conn.execute(
-        """INSERT INTO envios (contacto_id,campania_id,plantilla_id,email,status,scheduled_at)
-           VALUES (?,?,?,?, 'queued', ?)""",
-        (contacto_id, campania_id, plantilla_id, email, scheduled_at),
+        """INSERT INTO envios (contacto_id,campania_id,plantilla_id,email,status,scheduled_at,paso)
+           VALUES (?,?,?,?, 'queued', ?, ?)""",
+        (contacto_id, campania_id, plantilla_id, email, scheduled_at, paso),
     )
     conn.commit()
     eid = cur.lastrowid
@@ -179,9 +181,50 @@ def historial_agente(agente, limit=40):
     return [dict(r) for r in rows]
 
 
+# ── kv (estado interno: última revisión de inbox, etc.) ──
+def kv_get(clave, default=None):
+    conn = get_conn()
+    r = conn.execute("SELECT valor FROM kv WHERE clave=?", (clave,)).fetchone()
+    conn.close()
+    return r["valor"] if r else default
+
+def kv_set(clave, valor):
+    conn = get_conn()
+    conn.execute("INSERT OR REPLACE INTO kv (clave,valor) VALUES (?,?)", (clave, str(valor)))
+    conn.commit()
+    conn.close()
+
+
+# ── Respuestas / rebotes ──
+def marcar_respondio(contacto_id):
+    """El contacto respondió → sale de la secuencia y queda en 'respondio'."""
+    conn = get_conn()
+    conn.execute("UPDATE contactos SET estado='respondio', estado_ts=datetime('now') WHERE id=?", (contacto_id,))
+    conn.commit()
+    conn.close()
+
+def marcar_rebote(contacto_id, email=None):
+    """El mail rebotó (dirección inválida) → 'rebote' + a supresión para no reintentar."""
+    conn = get_conn()
+    conn.execute("UPDATE contactos SET estado='rebote', estado_ts=datetime('now') WHERE id=?", (contacto_id,))
+    conn.commit()
+    conn.close()
+    if email:
+        add_supresion(email, "rebote")
+
+def cancel_pending_envios(contacto_id):
+    """Cancela los envíos en cola de un contacto (p.ej. tras una respuesta: frena el follow-up)."""
+    conn = get_conn()
+    cur = conn.execute("UPDATE envios SET status='cancelled' WHERE contacto_id=? AND status='queued'", (contacto_id,))
+    conn.commit()
+    n = cur.rowcount
+    conn.close()
+    return n
+
+
 # ── Pipeline (estados de cliente) ──
 PIPELINE_ESTADOS = ["prospecto", "enviado", "respondio", "no_respondio",
-                    "seguimiento", "reunion", "cerrado", "perdido"]
+                    "seguimiento", "reunion", "cerrado", "perdido", "rebote"]
 
 def mover_contacto(cid, estado):
     conn = get_conn()
@@ -210,23 +253,42 @@ def metricas():
         return (list(r)[0] if r else 0) or 0
     por_estado = {row["estado"]: row["n"] for row in
                   conn.execute("SELECT estado,COUNT(*) n FROM contactos GROUP BY estado")}
+    EXITO = "('respondio','reunion','cerrado')"       # respondieron o avanzaron
     camps = []
-    for c in conn.execute("SELECT id,nombre,objetivo,estado FROM campanias ORDER BY id DESC"):
+    for c in conn.execute("SELECT id,nombre,objetivo,estado,tipo FROM campanias ORDER BY id DESC"):
         cid = c["id"]
-        env = scalar("SELECT COUNT(*) FROM envios WHERE campania_id=? AND status='sent'", cid)
+        env = scalar("SELECT COUNT(*) FROM envios WHERE campania_id=? AND status='sent'", cid)          # correos enviados (incluye follow-ups)
         cola = scalar("SELECT COUNT(*) FROM envios WHERE campania_id=? AND status='queued'", cid)
-        exitos = scalar("SELECT COUNT(*) FROM contactos WHERE campania_id=? "
-                        "AND estado IN ('respondio','reunion','cerrado')", cid)
-        camps.append({"id": cid, "nombre": c["nombre"], "objetivo": c["objetivo"], "estado": c["estado"],
-                      "enviados": env, "en_cola": cola, "exitos": exitos,
-                      "tasa": (round(100 * exitos / env, 1) if env else 0)})
+        contactados = scalar("SELECT COUNT(DISTINCT contacto_id) FROM envios WHERE campania_id=? AND status='sent'", cid)
+        exitos = scalar(f"SELECT COUNT(*) FROM contactos WHERE campania_id=? AND estado IN {EXITO}", cid)
+        rebotes = scalar("SELECT COUNT(*) FROM contactos WHERE campania_id=? AND estado='rebote'", cid)
+        por_paso = {row["paso"]: row["n"] for row in conn.execute(
+            "SELECT paso, COUNT(*) n FROM envios WHERE campania_id=? AND status='sent' GROUP BY paso", (cid,))}
+        camps.append({
+            "id": cid, "nombre": c["nombre"], "objetivo": c["objetivo"], "estado": c["estado"],
+            "tipo": c["tipo"] or "simple",
+            "enviados": env, "en_cola": cola, "contactados": contactados,
+            "exitos": exitos, "rebotes": rebotes,
+            "pasos": {str(p): por_paso.get(p, 0) for p in (1, 2, 3)},
+            "tasa_respuesta": (round(100 * exitos / contactados, 1) if contactados else 0),
+            "tasa_entrega": (round(100 * (env - rebotes) / env, 1) if env else 0),
+            "tasa": (round(100 * exitos / contactados, 1) if contactados else 0),   # compat
+        })
+    env_total = scalar("SELECT COUNT(*) FROM envios WHERE status='sent'")
+    contactados_total = scalar("SELECT COUNT(DISTINCT contacto_id) FROM envios WHERE status='sent'")
+    respondio_total = por_estado.get("respondio", 0) + por_estado.get("reunion", 0) + por_estado.get("cerrado", 0)
+    rebotes_total = por_estado.get("rebote", 0)
     data = {
         "total_contactos": scalar("SELECT COUNT(*) FROM contactos"),
         "por_estado": por_estado,
-        "respondio": por_estado.get("respondio", 0) + por_estado.get("reunion", 0) + por_estado.get("cerrado", 0),
+        "respondio": respondio_total,
         "reuniones": por_estado.get("reunion", 0),
         "clientes": por_estado.get("cerrado", 0),
-        "enviados": scalar("SELECT COUNT(*) FROM envios WHERE status='sent'"),
+        "enviados": env_total,
+        "contactados": contactados_total,
+        "rebotes": rebotes_total,
+        "tasa_respuesta": (round(100 * respondio_total / contactados_total, 1) if contactados_total else 0),
+        "tasa_entrega": (round(100 * (env_total - rebotes_total) / env_total, 1) if env_total else 0),
         "campanias": camps,
     }
     conn.close()
@@ -238,7 +300,12 @@ def auto_no_respondio(dias_habiles=3):
     conn = get_conn()
     movidos = 0
     hoy = datetime.utcnow().date()
-    for r in conn.execute("SELECT id,estado_ts FROM contactos WHERE estado='enviado'").fetchall():
+    # Excluye contactos en una campaña de secuencia: esos los mueve el motor de drip (secuencia.py).
+    filas = conn.execute(
+        "SELECT c.id AS id, c.estado_ts AS estado_ts FROM contactos c "
+        "LEFT JOIN campanias k ON c.campania_id = k.id "
+        "WHERE c.estado='enviado' AND (k.tipo IS NULL OR k.tipo <> 'secuencia')").fetchall()
+    for r in filas:
         ts = r["estado_ts"]
         if not ts:
             continue

@@ -101,6 +101,21 @@ class EnviarUnoReq(BaseModel):
     cuerpo: str
     empresa: str = ""
 
+class PasoReq(BaseModel):
+    asunto: str
+    cuerpo: str
+
+class CrearSecuenciaReq(BaseModel):
+    objetivo: str = ""
+    nicho: str
+    pais: str = "Argentina"
+    cantidad: int = 50
+    ventana_horas: float = 6.0          # el paso 1 se pacea en esta ventana
+    delay2_horas: float = 24.0          # paso 2: horas tras el paso 1 (si no respondió)
+    delay3_horas: float = 48.0          # paso 3: horas tras el paso 2 (si no respondió)
+    pasos: list                         # [{asunto,cuerpo}, ...] hasta 3
+    fuentes: list = ["apify", "web"]
+
 
 # ── UI ──
 @app.get("/", response_class=HTMLResponse)
@@ -117,6 +132,7 @@ def api_health():
         "sender_backend": config.SENDER_BACKEND,
         "prospects_mock": config.PROSPECTS_MOCK,       # False = scrapea real
         "claude_max_cli": bool(claude_bridge.CLAUDE_BIN),  # False en container: agentes IA no piensan acá
+        "imap_ready": config.imap_ready(),                 # ¿puede leer respuestas?
         "daily_cap": config.DAILY_SEND_CAP,
         "enviados_hoy": pipeline.enviados_hoy(),
     }
@@ -218,6 +234,75 @@ async def api_crear_manual(req: CrearManualReq):
         return {"campania_id": cid, "encolados": encolados, "objetivo": brief["cantidad"],
                 "asunto": req.asunto, "intervalo_seg": round(intervalo, 1)}
     return await run_in_threadpool(_run)
+
+
+@app.post("/api/campanias/crear_secuencia")
+async def api_crear_secuencia(req: CrearSecuenciaReq):
+    """Crea una campaña de SECUENCIA (drip 3 pasos) sin usar LLM del motor: los copys ya
+    vienen escritos (Claude Max). Busca prospectos, guarda hasta 3 plantillas (paso 1/2/3),
+    y encola SOLO el paso 1 paceado. Los pasos 2 y 3 los dispara el motor de secuencia
+    (secuencia.py) 24h/48h después, únicamente si el contacto no respondió."""
+    def _run():
+        from datetime import datetime, timedelta
+        pasos = [p for p in (req.pasos or []) if (p.get("asunto") or p.get("cuerpo"))][:3]
+        if not pasos:
+            return {"error": "faltan los copys de los pasos"}
+        brief = {"objetivo": req.objetivo or req.nicho, "nicho": req.nicho, "pais": req.pais,
+                 "cantidad": int(req.cantidad), "ventana_horas": float(req.ventana_horas),
+                 "fuentes": list(req.fuentes) or ["apify", "web"]}
+        activity.update("orquestador", "trabajando",
+                        f"Armando secuencia «{req.nicho}» ({len(pasos)} pasos, Claude Max)…", 12)
+        pasos_cfg = {"delays_horas": {"2": float(req.delay2_horas), "3": float(req.delay3_horas)}}
+        cid = pipeline.create_campania(
+            nombre=f"Secuencia {datetime.now():%Y-%m-%d %H:%M}",
+            objetivo=brief["objetivo"], brief=brief,
+            cantidad_objetivo=brief["cantidad"], ventana_horas=brief["ventana_horas"],
+            tipo="secuencia", pasos_json=pasos_cfg)
+        # guardar las 3 (o menos) plantillas, una por paso
+        pid_por_paso = {}
+        for i, p in enumerate(pasos, start=1):
+            pid_por_paso[i] = pipeline.create_plantilla(cid, p.get("asunto", ""), p.get("cuerpo", ""),
+                                                        variante="A", paso=i)
+        # buscar prospectos y encolar SOLO el paso 1, paceado en la ventana
+        prospectos = search_agent.buscar(brief)
+        n = len(prospectos); ventana_h = brief["ventana_horas"]
+        intervalo = (ventana_h * 3600.0 / n) if n else 0
+        ahora = datetime.utcnow(); encolados = 0
+        for i, pr in enumerate(prospectos):
+            sched = (ahora + timedelta(seconds=i * intervalo)).isoformat(timespec="seconds")
+            pipeline.enqueue_envio(pr["contacto_id"], cid, pid_por_paso[1], pr["email"], sched, paso=1)
+            encolados += 1
+        try:
+            ids = [pr.get("contacto_id") for pr in prospectos if pr.get("contacto_id")]
+            if ids:
+                conn = get_conn()
+                conn.executemany("UPDATE contactos SET campania_id=? WHERE id=?", [(cid, i) for i in ids])
+                conn.commit(); conn.close()
+        except Exception:
+            pass
+        pipeline.log_agente("orquestador", f"Secuencia: {brief['objetivo']}",
+                            f"{len(pasos)} pasos · paso 1 encolado a {encolados} · +{req.delay2_horas}h/+{req.delay3_horas}h")
+        activity.update("orquestador", "listo",
+                        f"Secuencia #{cid} lista ✅ paso 1 → {encolados} contactos "
+                        f"(follow-ups a +{int(req.delay2_horas)}h y +{int(req.delay3_horas)}h si no responden).", 100,
+                        resultado=(f"Secuencia #{cid} · {len(pasos)} pasos\n"
+                                   f"Nicho: {req.nicho} · {req.pais}\n"
+                                   f"Paso 1 encolado a {encolados} de {brief['cantidad']} "
+                                   f"(1 cada {round(intervalo)}s)\n"
+                                   f"Follow-ups: paso 2 a +{req.delay2_horas}h, paso 3 a +{req.delay3_horas}h "
+                                   f"(solo si no responden)"),
+                        titulo=f"Secuencia #{cid} armada")
+        return {"campania_id": cid, "pasos": len(pasos), "encolados_paso1": encolados,
+                "objetivo": brief["cantidad"], "delay2_horas": req.delay2_horas, "delay3_horas": req.delay3_horas,
+                "intervalo_seg": round(intervalo, 1)}
+    return await run_in_threadpool(_run)
+
+
+@app.post("/api/inbox/revisar")
+async def api_inbox_revisar():
+    """Dispara una lectura manual de la casilla (IMAP) para detectar respuestas/rebotes."""
+    import inbox
+    return await run_in_threadpool(inbox.revisar)
 
 
 @app.get("/api/campanias/{cid}")

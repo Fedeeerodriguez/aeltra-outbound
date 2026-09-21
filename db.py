@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS campanias (
     estado TEXT DEFAULT 'borrador',
     cantidad_objetivo INTEGER,
     ventana_horas REAL,
+    tipo TEXT DEFAULT 'simple',        -- simple | secuencia
+    pasos_json TEXT,                   -- delays/config de la secuencia
     created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -34,6 +36,7 @@ CREATE TABLE IF NOT EXISTS plantillas (
     variante TEXT DEFAULT 'A',
     asunto TEXT,
     cuerpo TEXT,
+    paso INTEGER DEFAULT 1,            -- 1 | 2 | 3 (paso de la secuencia)
     created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -43,11 +46,12 @@ CREATE TABLE IF NOT EXISTS envios (
     campania_id INTEGER,
     plantilla_id INTEGER,
     email TEXT,
-    status TEXT DEFAULT 'queued',      -- queued | sent | failed | skipped
+    status TEXT DEFAULT 'queued',      -- queued | sent | failed | skipped | cancelled
     scheduled_at TEXT,
     sent_at TEXT,
     message_id TEXT,
-    error TEXT
+    error TEXT,
+    paso INTEGER DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS supresion (
@@ -86,8 +90,14 @@ CREATE TABLE IF NOT EXISTS agente_historial (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS kv (
+    clave TEXT PRIMARY KEY,
+    valor TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_envios_due ON envios(status, scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_hist_ag ON agente_historial(agente, id);
+CREATE INDEX IF NOT EXISTS idx_envios_seq ON envios(contacto_id, campania_id, paso);
 """
 
 def get_conn():
@@ -104,6 +114,11 @@ def init_db():
         "ALTER TABLE rutinas ADD COLUMN motor TEXT DEFAULT 'engine'",
         "ALTER TABLE contactos ADD COLUMN estado_ts TEXT",   # cuándo cambió de estado
         "ALTER TABLE contactos ADD COLUMN campania_id INTEGER",
+        # secuencia (drip 3 pasos) + detección de respuestas
+        "ALTER TABLE plantillas ADD COLUMN paso INTEGER DEFAULT 1",
+        "ALTER TABLE envios ADD COLUMN paso INTEGER DEFAULT 1",
+        "ALTER TABLE campanias ADD COLUMN tipo TEXT DEFAULT 'simple'",   # simple | secuencia
+        "ALTER TABLE campanias ADD COLUMN pasos_json TEXT",              # delays y config de pasos
     ):
         try:
             conn.execute(stmt)

@@ -43,6 +43,7 @@ def run_agent(agente, objetivo, budget=1.0, timeout=600):
              "--permission-mode", "bypassPermissions",
              "--output-format", "json"],
             cwd=config.BASE_DIR, capture_output=True, text=True, timeout=timeout, env=env,
+            encoding="utf-8", errors="replace",   # el CLI emite UTF-8; sin esto Windows (cp1252) rompe
         )
         result = ""
         try:
