@@ -329,6 +329,45 @@ img{image-rendering:pixelated}
         <button class="b" id="camp2-go" style="white-space:nowrap">Lanzar campaña</button>
       </div>
       <div id="camp2-msg" style="font-size:15px;color:#0f7a5a;margin-bottom:12px"></div>
+
+      <details id="seq-box" style="border:1px solid #d7dbe3;border-radius:10px;padding:10px 12px;margin-bottom:14px">
+        <summary style="cursor:pointer;font-weight:600;color:#12324e">📧 Secuencia de 3 correos (con follow-ups automáticos)</summary>
+        <p class="lbl" style="margin:8px 0">Manda el paso 1 ahora (paceado). El paso 2 sale a las <b>N horas</b> y el paso 3 a las <b>M horas</b>, <b>solo si el contacto no respondió</b>. Las respuestas se detectan solas y frenan el follow-up.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <label class="lbl">Nicho<input class="inp" id="seq-nicho" value="empresas constructoras"></label>
+          <label class="lbl">País<input class="inp" id="seq-pais" value="Argentina"></label>
+          <label class="lbl">Cantidad<input class="inp" id="seq-cant" type="number" value="25"></label>
+          <label class="lbl">Ventana paso 1 (horas)<input class="inp" id="seq-ventana" type="number" value="6"></label>
+          <label class="lbl">Paso 2 a las… (horas)<input class="inp" id="seq-d2" type="number" value="24"></label>
+          <label class="lbl">Paso 3 a las… (horas)<input class="inp" id="seq-d3" type="number" value="48"></label>
+        </div>
+        <div class="lbl" style="margin-top:6px"><b>Paso 1 — directo</b></div>
+        <input class="inp" id="seq-a1" value="¿Cuánto tiempo se va en tareas manuales?">
+        <textarea class="inp" id="seq-c1" rows="4" style="width:100%;margin-top:4px">{{nombre}}, en muchas empresas constructoras el equipo dedica horas a tareas repetitivas —cargar datos, armar seguimientos, responder las mismas consultas— que hoy podría resolver un sistema.
+
+En {{empresa}} eso tiene un costo concreto: tiempo que no se factura y respuestas que llegan tarde.
+
+En Aeltra construimos software y agentes de IA a medida para automatizar justamente ese trabajo. Le comparto más en aeltra.company.
+
+¿Le interesaría una llamada de 15 minutos para ver dónde se puede ahorrar tiempo?</textarea>
+        <div class="lbl" style="margin-top:8px"><b>Paso 2 — +24h si no responde</b></div>
+        <input class="inp" id="seq-a2" value="Sobre el tiempo del equipo">
+        <textarea class="inp" id="seq-c2" rows="4" style="width:100%;margin-top:4px">{{nombre}}, le escribí hace un par de días por las horas que se van en tareas manuales dentro de {{empresa}}.
+
+Sé que la agenda de una constructora no da respiro, así que voy al grano: en 15 minutos le muestro dos o tres procesos concretos que se pueden automatizar y el tiempo que liberaría.
+
+Sin compromiso. ¿Le viene bien esta semana? (Más info: aeltra.company)</textarea>
+        <div class="lbl" style="margin-top:8px"><b>Paso 3 — +48h si no responde</b></div>
+        <input class="inp" id="seq-a3" value="¿Cierro el tema por ahora?">
+        <textarea class="inp" id="seq-c3" rows="4" style="width:100%;margin-top:4px">{{nombre}}, no quiero insistir de más. Si hoy no es el momento para revisar cómo automatizar tareas en {{empresa}}, no hay problema.
+
+Le dejo la puerta abierta: cuando quiera mirar dónde se va el tiempo (y la plata) del equipo, responde este mismo correo y coordinamos.
+
+Gracias por su tiempo. — aeltra.company</textarea>
+        <button class="b" id="seq-go" style="margin-top:10px">🚀 Lanzar secuencia (envío real)</button>
+        <div id="seq-msg" style="font-size:15px;margin-top:8px"></div>
+      </details>
+
       <div id="list-campanias">Cargando…</div>
     </div></div></section>
     <section class="view" id="v-contactos"><div class="win"><div class="head">CONTACTOS<span class="x">X</span></div><div class="body" id="list-contactos">Cargando…</div></div></section>
@@ -337,11 +376,14 @@ img{image-rendering:pixelated}
     <!-- ===== DASHBOARD ===== -->
     <section class="view" id="v-dashboard">
       <div class="win"><div class="head"><span class="dot"></span> DASHBOARD <span class="x">X</span></div><div class="body">
-        <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(115px,1fr))">
           <div class="kpi"><div class="k">Contactos</div><div class="v" id="db-contactos">0</div></div>
           <div class="kpi"><div class="k">Enviados</div><div class="v" id="db-enviados">0</div></div>
           <div class="kpi"><div class="k">Respuestas/Agendas</div><div class="v" id="db-resp">0</div></div>
           <div class="kpi"><div class="k">Clientes</div><div class="v" id="db-clientes">0</div></div>
+          <div class="kpi"><div class="k">Tasa entrega</div><div class="v" id="db-tentrega">0%</div></div>
+          <div class="kpi"><div class="k">Tasa respuesta</div><div class="v" id="db-tresp">0%</div></div>
+          <div class="kpi"><div class="k">Rebotes</div><div class="v" id="db-rebotes">0</div></div>
         </div>
         <p class="lbl">Cómo le fue a cada campaña (éxito = respuestas/agendas)</p>
         <div id="db-camps">Cargando…</div>
@@ -789,6 +831,26 @@ img{image-rendering:pixelated}
     }catch(e){ m.style.color='#b03730'; m.textContent='Error al lanzar'; }
   });
 
+  /* ==== lanzar SECUENCIA (3 pasos) ==== */
+  $('seq-go')?.addEventListener('click',async()=>{
+    const g=id=>$(id).value.trim();
+    const nicho=g('seq-nicho'); if(!nicho){ $('seq-msg').textContent='Poné un nicho.'; return; }
+    const pasos=[{asunto:g('seq-a1'),cuerpo:g('seq-c1')},{asunto:g('seq-a2'),cuerpo:g('seq-c2')},{asunto:g('seq-a3'),cuerpo:g('seq-c3')}]
+      .filter(p=>p.asunto||p.cuerpo);
+    const cant=parseInt(g('seq-cant')||'25',10);
+    if(!confirm(`Vas a lanzar una secuencia REAL a hasta ${cant} contactos de «${nicho}». El paso 1 se manda de verdad (los follow-ups salen 24h/48h si no responden). ¿Confirmás?`)) return;
+    const m=$('seq-msg'); m.style.color='#8a5a12'; m.textContent='Buscando prospectos y encolando el paso 1…';
+    try{
+      const j=await (await fetch('/api/campanias/crear_secuencia',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({nicho, pais:g('seq-pais')||'Argentina', cantidad:cant,
+          ventana_horas:parseFloat(g('seq-ventana')||'6'), delay2_horas:parseFloat(g('seq-d2')||'24'),
+          delay3_horas:parseFloat(g('seq-d3')||'48'), pasos})})).json();
+      if(j.error){ m.style.color='#b03730'; m.textContent='Error: '+j.error; return; }
+      m.style.color='#0f7a5a'; m.textContent=`✅ Secuencia #${j.campania_id} lanzada · paso 1 encolado a ${j.encolados_paso1} (1 cada ${j.intervalo_seg}s). Follow-ups a +${j.delay2_horas}h y +${j.delay3_horas}h si no responden.`;
+      setTimeout(loadCampanias,1500);
+    }catch(e){ m.style.color='#b03730'; m.textContent='Error al lanzar la secuencia'; }
+  });
+
   /* ==== detalle/estado de una campaña (clic en la fila) ==== */
   async function verCampania(id){ try{
     const c=await (await fetch('/api/campanias/'+id)).json();
@@ -816,14 +878,15 @@ img{image-rendering:pixelated}
   async function loadDashboard(){ try{ const m=await (await fetch('/api/dashboard')).json();
     const set=(id,v)=>{const e=$(id);if(e)e.textContent=(v==null?0:v);};
     set('db-contactos',m.total_contactos); set('db-enviados',m.enviados); set('db-resp',m.respondio); set('db-clientes',m.clientes);
+    set('db-tentrega',(m.tasa_entrega!=null?m.tasa_entrega:0)+'%'); set('db-tresp',(m.tasa_respuesta!=null?m.tasa_respuesta:0)+'%'); set('db-rebotes',m.rebotes);
     const box=$('db-camps'); if(!box)return;
     if(!m.campanias||!m.campanias.length){ box.innerHTML='<p class="hint" style="color:#777">Sin campañas todavía.</p>'; return; }
-    box.innerHTML='<table class="htable"><thead><tr><th>#</th><th>Campaña</th><th>Enviados</th><th>En cola</th><th>Éxitos</th><th>Tasa</th></tr></thead><tbody>'+
-      m.campanias.map(c=>`<tr style="cursor:pointer" onclick="_verCampania(${c.id})"><td>${c.id}</td><td>${c.nombre||''}</td><td>${c.enviados}</td><td>${c.en_cola}</td><td>${c.exitos}</td><td><b>${c.tasa}%</b></td></tr>`).join('')+'</tbody></table>';
+    box.innerHTML='<table class="htable"><thead><tr><th>#</th><th>Campaña</th><th>Tipo</th><th>Contactados</th><th>Pasos (1/2/3)</th><th>Rebotes</th><th>T. entrega</th><th>Respuestas</th><th>T. resp.</th></tr></thead><tbody>'+
+      m.campanias.map(c=>{const p=c.pasos||{};return `<tr style="cursor:pointer" onclick="_verCampania(${c.id})"><td>${c.id}</td><td>${c.nombre||''}</td><td>${c.tipo==='secuencia'?'📧 sec':'simple'}</td><td>${c.contactados||0}</td><td>${p['1']||0}/${p['2']||0}/${p['3']||0}</td><td>${c.rebotes||0}</td><td>${c.tasa_entrega||0}%</td><td>${c.exitos||0}</td><td><b>${c.tasa_respuesta||0}%</b></td></tr>`;}).join('')+'</tbody></table>';
   }catch(e){} }
 
   /* ==== Pipeline (kanban por estado) ==== */
-  const PIPE_LABEL={prospecto:'Prospecto',enviado:'Enviado',respondio:'Respondió',no_respondio:'No respondió',seguimiento:'En seguimiento',reunion:'Reunión agendada',cerrado:'Cerrado',perdido:'Perdido'};
+  const PIPE_LABEL={prospecto:'Prospecto',enviado:'Enviado',respondio:'Respondió',no_respondio:'No respondió',seguimiento:'En seguimiento',reunion:'Reunión agendada',cerrado:'Cerrado',perdido:'Perdido',rebote:'Rebote'};
   async function loadPipeline(){ try{ const d=await (await fetch('/api/pipeline')).json();
     const cols=$('pipe-cols'); if(!cols)return; const estados=d.estados||[]; const byEst={}; estados.forEach(e=>byEst[e]=[]);
     (d.contactos||[]).forEach(c=>{ (byEst[c.estado]||(byEst[c.estado]=[])).push(c); });
