@@ -31,7 +31,9 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 @app.middleware("http")
 async def _basic_auth(request, call_next):
     """Si BASIC_AUTH_USER/PASS están seteados, exige auth en todo menos la baja."""
-    if config.BASIC_AUTH_USER and config.BASIC_AUTH_PASS and not request.url.path.startswith("/api/baja"):
+    # /api/baja (opt-out público) y /api/health (healthcheck) van sin auth.
+    _publicos = ("/api/baja", "/api/health")
+    if config.BASIC_AUTH_USER and config.BASIC_AUTH_PASS and not request.url.path.startswith(_publicos):
         import base64
         import secrets
         from starlette.responses import Response
