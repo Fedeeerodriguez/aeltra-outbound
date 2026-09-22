@@ -13,14 +13,20 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # ── Envío ──
-      SENDER_BACKEND: "${SENDER_BACKEND:-gmail_oauth}"
-      GMAIL_CLIENT_ID: "${GMAIL_CLIENT_ID}"
-      GMAIL_CLIENT_SECRET: "${GMAIL_CLIENT_SECRET}"
-      GMAIL_REFRESH_TOKEN: "${GMAIL_REFRESH_TOKEN}"
-      GMAIL_SENDER: "${GMAIL_SENDER}"
+      # ── Envío por SMTP (Zoho, dominio propio autenticado) ──
+      SENDER_BACKEND: "${SENDER_BACKEND:-smtp}"
+      SMTP_HOST: "${SMTP_HOST:-smtppro.zoho.com}"
+      SMTP_PORT: "${SMTP_PORT:-465}"
+      SMTP_USER: "${SMTP_USER}"
+      SMTP_PASS: "${SMTP_PASS}"
       FROM_NAME: "${FROM_NAME:-Aeltra}"
       FROM_EMAIL: "${FROM_EMAIL}"
+      PLAIN_TEXT_ONLY: "${PLAIN_TEXT_ONLY:-true}"
+      # ── Lectura de respuestas por IMAP (mismo buzón Zoho) ──
+      IMAP_HOST: "${IMAP_HOST:-imappro.zoho.com}"
+      IMAP_PORT: "${IMAP_PORT:-993}"
+      IMAP_USER: "${IMAP_USER}"
+      IMAP_PASS: "${IMAP_PASS}"
       # ── Prospección ──
       PROSPECTS_MOCK: "${PROSPECTS_MOCK:-false}"
       APIFY_TOKEN: "${APIFY_TOKEN}"

@@ -29,26 +29,37 @@ La base SQLite persiste en un volumen (`/data`), así que sobrevive reinicios y 
 Pegá esto y completá los valores. **No subas el `.env`** — estas van en EasyPanel.
 
 ```
-SENDER_BACKEND=gmail_oauth
-GMAIL_CLIENT_ID=...
-GMAIL_CLIENT_SECRET=...
-GMAIL_REFRESH_TOKEN=...
-GMAIL_SENDER=contacto.aeltra@gmail.com
+# --- Envío por SMTP (Zoho, dominio propio autenticado SPF/DKIM/DMARC) ---
+SENDER_BACKEND=smtp
+SMTP_HOST=smtppro.zoho.com
+SMTP_PORT=465
+SMTP_USER=contacto@aeltra.company
+SMTP_PASS=<app password de Zoho>
 FROM_NAME=Aeltra
-FROM_EMAIL=contacto.aeltra@gmail.com
+FROM_EMAIL=contacto@aeltra.company
+PLAIN_TEXT_ONLY=true
 
+# --- Lectura de respuestas por IMAP (mismo buzón Zoho) ---
+IMAP_HOST=imappro.zoho.com
+IMAP_PORT=993
+IMAP_USER=contacto@aeltra.company
+IMAP_PASS=<mismo app password de Zoho>
+
+# --- Prospección ---
 PROSPECTS_MOCK=false
 APIFY_TOKEN=...
 
 # --- Seguridad / compliance (CRÍTICO en producción) ---
 BASIC_AUTH_USER=aeltra
 BASIC_AUTH_PASS=<una-contraseña-fuerte>
-UNSUB_BASE=https://TU-DOMINIO/api/baja      # <-- NO localhost. Tiene que ser el dominio público.
+UNSUB_BASE=https://TU-DOMINIO/api/baja      # <-- NO localhost. El dominio público del servicio.
 
 # --- Ritmo de envío ---
 DEFAULT_WINDOW_HOURS=6
 DAILY_SEND_CAP=40
 ```
+
+> Los valores de Zoho (SMTP/IMAP) los tenés en tu `.env` local. El **App Password** es el mismo para SMTP e IMAP.
 
 > **`UNSUB_BASE`**: cada mail lleva el link de baja apuntando acá. Si queda en `localhost`,
 > los destinatarios **no pueden desuscribirse** (problema legal y de reputación). Poné el dominio público.
@@ -72,20 +83,21 @@ Debería devolver `"ok": true` y `"sender_ready": true`.
 
 ---
 
-## 5. ⚠️ Límite importante: los agentes con Claude Max NO piensan en el contenedor
+## 5. Qué corre en el contenedor (la máquina de outbound completa)
 
-Los agentes de la oficina (Nico/Vera/Lupe/Tino con Claude Max) corren vía el CLI `claude -p`,
-que **no está autenticado dentro del contenedor**. En `/api/health` vas a ver `"claude_max_cli": false`.
+**Todo el outbound funciona 24/7 en el contenedor, sin Claude Max ni tokens de API:**
+- Prospección real (Apify), pipeline, dashboard, historial, baja (opt-out).
+- **Secuencia de 3 pasos** con follow-ups condicionales (24h/48h).
+- **Detección de respuestas por IMAP** (Zoho) → frena follow-ups + marca "respondió".
+- Envío por SMTP (Zoho) con tope diario y texto plano.
+- Métricas de entrega/respuesta.
 
-**Qué SÍ funciona en producción (sin tokens de API, sin Claude Max):**
-- Prospección real (Apify), pipeline, dashboard, historial, y la baja (opt-out).
-- Envío paceado con tope diario real.
-- Crear campañas por el motor: endpoint `POST /api/campanias/crear_manual` (el copy va escrito).
+Los copys ya van escritos (se cargan en el lanzador de Secuencia), así que **no hace falta
+que las agentes "piensen" con IA** para mandar. En `/api/health` vas a ver `"claude_max_cli": false`
+y `"reply_backend": "imap"` — es lo esperado.
 
-**Qué NO funciona en el contenedor:** que Vera/Nico "piensen" el copy solos con Claude Max.
-Para eso, por ahora, usás los agentes en tu Visual Studio Code local (tu sesión de Claude Max)
-y las campañas se cargan por el motor. Resolver Claude Max 24/7 en el contenedor es un tema aparte
-(requiere autenticar el CLI dentro del container) y lo encaramos después si lo querés.
+> Si en el futuro querés que Vera/Nico redacten copy con Claude Max, eso se hace desde tu
+> Visual Studio Code local (tu sesión de Claude Max); el envío y el seguimiento igual corren en el server.
 
 ---
 
