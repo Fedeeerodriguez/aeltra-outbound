@@ -4,6 +4,7 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.message import EmailMessage
 from email.utils import make_msgid, formataddr
 
 import config
@@ -23,15 +24,20 @@ class SMTPSender(Sender):
         if not (self.user and self.password):
             raise RuntimeError("SMTP no configurado: falta SMTP_USER / SMTP_PASS en .env")
 
-        msg = MIMEMultipart("alternative")
+        msg_id = make_msgid(domain=self.from_email.split("@")[-1])
+        if html:
+            msg = MIMEMultipart("alternative")
+            msg.attach(MIMEText(text, "plain", "utf-8"))
+            msg.attach(MIMEText(html, "html", "utf-8"))
+        else:
+            # texto plano puro → parece un mail 1-a-1
+            msg = EmailMessage()
+            msg.set_content(text)
         msg["Subject"] = subject
         msg["From"] = formataddr((self.from_name, self.from_email))
         msg["To"] = formataddr((to_name or "", to_email))
-        msg_id = make_msgid(domain=self.from_email.split("@")[-1])
         msg["Message-ID"] = msg_id
         msg["List-Unsubscribe"] = f"<mailto:{self.from_email}?subject=BAJA>"
-        msg.attach(MIMEText(text, "plain", "utf-8"))
-        msg.attach(MIMEText(html, "html", "utf-8"))
 
         ctx = ssl.create_default_context()
         if self.port == 465:

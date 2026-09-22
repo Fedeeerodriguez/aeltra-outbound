@@ -19,22 +19,20 @@ def _merge(texto: str, variables: dict) -> str:
 
 
 def _footer_html(email: str) -> str:
+    # Pie liviano y humano (ayuda a caer en Principal en vez de Promociones).
     unsub = f"{config.UNSUB_BASE}?email={quote(email)}"
     return (
-        '<hr style="border:none;border-top:1px solid #e3e8f0;margin:22px 0 12px">'
-        f'<p style="font:12px/1.5 Arial,sans-serif;color:#8a94a6">'
-        f'{config.COMPANY_NAME} · {config.COMPANY_TAGLINE}<br>'
-        f'Si no querés recibir más correos, <a href="{unsub}" style="color:#8a94a6">hacé click acá</a> '
-        f'o respondé <b>BAJA</b>.</p>'
+        '<br>--<br>'
+        f'<span style="color:#777;font-size:13px">{config.COMPANY_NAME}. '
+        f'Si preferís que no te escriba más, respondé BAJA o '
+        f'<a href="{unsub}" style="color:#777">hacé click acá</a>.</span>'
     )
 
 
 def _footer_text(email: str) -> str:
-    unsub = f"{config.UNSUB_BASE}?email={quote(email)}"
-    return (
-        f"\n\n--\n{config.COMPANY_NAME} · {config.COMPANY_TAGLINE}\n"
-        f"Para dejar de recibir correos: {unsub} (o respondé BAJA)."
-    )
+    # Pie mínimo y humano para texto plano (opt-out por respuesta; el header
+    # List-Unsubscribe cubre la baja técnica).
+    return f"\n\n--\n{config.COMPANY_NAME}\nSi preferís que no te escriba más, respondé BAJA."
 
 
 def render(asunto: str, cuerpo: str, nombre: str, email: str, variables: dict = None):
@@ -44,16 +42,17 @@ def render(asunto: str, cuerpo: str, nombre: str, email: str, variables: dict = 
     subject = _merge(asunto, base).strip()
     body = _merge(cuerpo, base).strip()
 
-    paras = [p.strip() for p in re.split(r"\n{1,}", body) if p.strip()]
-    html_body = "".join(
-        f'<p style="font:15px/1.6 Arial,sans-serif;color:#1c2432;margin:0 0 14px">{p}</p>'
-        for p in paras
-    )
-    html = (
-        '<div style="max-width:560px;margin:0 auto">'
-        + html_body + _footer_html(email) + "</div>"
-    )
     text = body + _footer_text(email)
+    if config.PLAIN_TEXT_ONLY:
+        return subject, "", text        # sin HTML → mail de texto plano puro
+
+    paras = [p.strip() for p in re.split(r"\n{1,}", body) if p.strip()]
+    # HTML mínimo y sobrio (parece un mail 1-a-1, no una newsletter).
+    html_body = "".join(f"<p>{p}</p>" for p in paras)
+    html = (
+        '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;'
+        'line-height:1.5;color:#222">' + html_body + _footer_html(email) + "</div>"
+    )
     return subject, html, text
 
 

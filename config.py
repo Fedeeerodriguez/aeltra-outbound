@@ -56,6 +56,10 @@ UNSUB_BASE = os.getenv("UNSUB_BASE", "http://localhost:8000/api/baja")
 DEFAULT_WINDOW_HOURS = float(os.getenv("DEFAULT_WINDOW_HOURS", "6"))
 DAILY_SEND_CAP = int(os.getenv("DAILY_SEND_CAP", "40"))
 
+# Formato del correo: texto plano puro (más "1-a-1", tiende a caer en Principal).
+# Poné PLAIN_TEXT_ONLY=false si querés volver al HTML.
+PLAIN_TEXT_ONLY = _b(os.getenv("PLAIN_TEXT_ONLY"), True)
+
 # Rutas
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.getenv("DB_PATH", os.path.join(BASE_DIR, "aeltra.db"))
@@ -72,9 +76,22 @@ def imap_ready() -> bool:
 def gmail_oauth_ready() -> bool:
     return bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN)
 
+def reply_backend():
+    """Lee las respuestas del MISMO buzón desde el que se envía.
+    Si enviás por SMTP (Zoho) → IMAP; si enviás por Gmail OAuth → Gmail API."""
+    if SENDER_BACKEND == "smtp" and imap_ready():
+        return "imap"
+    if SENDER_BACKEND == "gmail_oauth" and gmail_oauth_ready():
+        return "gmail"
+    # fallbacks
+    if imap_ready():
+        return "imap"
+    if gmail_oauth_ready():
+        return "gmail"
+    return None
+
 def reply_read_ready() -> bool:
-    """¿Puede leer respuestas? Por Gmail API (OAuth) o por IMAP."""
-    return gmail_oauth_ready() or imap_ready()
+    return reply_backend() is not None
 
 def sender_ready() -> bool:
     if SENDER_BACKEND == "gmail_oauth":

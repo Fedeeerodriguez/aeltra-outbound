@@ -166,9 +166,10 @@ def revisar(max_msgs=100):
     """Lee la casilla y actualiza respuestas/rebotes. Elige Gmail API si hay OAuth,
     si no IMAP, si no es no-op."""
     try:
-        if config.gmail_oauth_ready():
+        backend = config.reply_backend()   # lee del mismo buzón desde el que se envía
+        if backend == "gmail":
             return _revisar_gmail(max_msgs)
-        if config.imap_ready():
+        if backend == "imap":
             return _revisar_imap(max_msgs)
         return {"ok": False, "motivo": "sin backend de lectura (ni OAuth Gmail ni IMAP)"}
     except Exception as e:
