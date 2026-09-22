@@ -336,34 +336,30 @@ img{image-rendering:pixelated}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           <label class="lbl">Nicho<input class="inp" id="seq-nicho" value="empresas constructoras"></label>
           <label class="lbl">País<input class="inp" id="seq-pais" value="Argentina"></label>
-          <label class="lbl">Cantidad<input class="inp" id="seq-cant" type="number" value="25"></label>
+          <label class="lbl">Cantidad<input class="inp" id="seq-cant" type="number" value="20"></label>
           <label class="lbl">Ventana paso 1 (horas)<input class="inp" id="seq-ventana" type="number" value="6"></label>
           <label class="lbl">Paso 2 a las… (horas)<input class="inp" id="seq-d2" type="number" value="24"></label>
           <label class="lbl">Paso 3 a las… (horas)<input class="inp" id="seq-d3" type="number" value="48"></label>
         </div>
         <div class="lbl" style="margin-top:6px"><b>Paso 1 — directo</b></div>
-        <input class="inp" id="seq-a1" value="¿Cuánto tiempo se va en tareas manuales?">
-        <textarea class="inp" id="seq-c1" rows="4" style="width:100%;margin-top:4px">{{nombre}}, en muchas empresas constructoras el equipo dedica horas a tareas repetitivas —cargar datos, armar seguimientos, responder las mismas consultas— que hoy podría resolver un sistema.
+        <input class="inp" id="seq-a1" value="El tiempo administrativo en {{empresa}}">
+        <textarea class="inp" id="seq-c1" rows="5" style="width:100%;margin-top:4px">{{nombre}}, buenas. Le escribo porque en muchas constructoras el equipo pierde horas en tareas administrativas: armar presupuestos, cargar datos entre planillas, hacer seguimiento a clientes y proveedores, responder las mismas consultas.
 
-En {{empresa}} eso tiene un costo concreto: tiempo que no se factura y respuestas que llegan tarde.
+En Aeltra armamos software y agentes de IA a medida para sacarse ese trabajo repetitivo de encima, sin sumar gente.
 
-En Aeltra construimos software y agentes de IA a medida para automatizar justamente ese trabajo. Le comparto más en aeltra.company.
-
-¿Le interesaría una llamada de 15 minutos para ver dónde se puede ahorrar tiempo?</textarea>
+¿Le sirve que le muestre en 15 minutos cómo se vería en {{empresa}}? Si no es para ustedes, me avisa y listo.</textarea>
         <div class="lbl" style="margin-top:8px"><b>Paso 2 — +24h si no responde</b></div>
-        <input class="inp" id="seq-a2" value="Sobre el tiempo del equipo">
-        <textarea class="inp" id="seq-c2" rows="4" style="width:100%;margin-top:4px">{{nombre}}, le escribí hace un par de días por las horas que se van en tareas manuales dentro de {{empresa}}.
+        <input class="inp" id="seq-a2" value="¿Le quedó pendiente, {{nombre}}?">
+        <textarea class="inp" id="seq-c2" rows="5" style="width:100%;margin-top:4px">{{nombre}}, le escribí hace unos días por el tiempo que se va en tareas administrativas en {{empresa}}.
 
-Sé que la agenda de una constructora no da respiro, así que voy al grano: en 15 minutos le muestro dos o tres procesos concretos que se pueden automatizar y el tiempo que liberaría.
+Para ser concreto, lo que más automatizamos en constructoras es el armado de presupuestos, el seguimiento a quienes pidieron una cotización y la carga de datos entre sistemas.
 
-Sin compromiso. ¿Le viene bien esta semana? (Más info: aeltra.company)</textarea>
+Si le interesa, en 15 minutos le muestro por dónde conviene arrancar. ¿Tiene un rato esta semana?</textarea>
         <div class="lbl" style="margin-top:8px"><b>Paso 3 — +48h si no responde</b></div>
-        <input class="inp" id="seq-a3" value="¿Cierro el tema por ahora?">
-        <textarea class="inp" id="seq-c3" rows="4" style="width:100%;margin-top:4px">{{nombre}}, no quiero insistir de más. Si hoy no es el momento para revisar cómo automatizar tareas en {{empresa}}, no hay problema.
+        <input class="inp" id="seq-a3" value="¿Cierro por ahora, {{nombre}}?">
+        <textarea class="inp" id="seq-c3" rows="5" style="width:100%;margin-top:4px">{{nombre}}, no quiero llenarle la casilla. Si hoy no es prioridad, lo entiendo perfecto.
 
-Le dejo la puerta abierta: cuando quiera mirar dónde se va el tiempo (y la plata) del equipo, responde este mismo correo y coordinamos.
-
-Gracias por su tiempo. — aeltra.company</textarea>
+Le dejo la puerta abierta: cuando quieran mirar cómo ahorrar tiempo administrativo en {{empresa}}, me responde este mismo correo y coordinamos. Gracias por su tiempo.</textarea>
         <button class="b" id="seq-go" style="margin-top:10px">🚀 Lanzar secuencia (envío real)</button>
         <div id="seq-msg" style="font-size:15px;margin-top:8px"></div>
       </details>
