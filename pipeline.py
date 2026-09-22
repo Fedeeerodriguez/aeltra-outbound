@@ -13,13 +13,13 @@ def add_contact(nombre, email, empresa=None, nicho=None, pais=None, fuente=None,
     try:
         cur = conn.execute(
             """INSERT INTO contactos (nombre,email,empresa,nicho,pais,fuente,estado)
-               VALUES (?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?) ON CONFLICT(email) DO NOTHING""",
             (nombre, email, empresa, nicho, pais, fuente, estado),
         )
         conn.commit()
-        return cur.lastrowid
-    except Exception:
-        # ya existe (email UNIQUE) → devolver el id existente
+        if cur.lastrowid:
+            return cur.lastrowid
+        # ya existía (email UNIQUE) → devolver el id existente
         row = conn.execute("SELECT id FROM contactos WHERE email=?", (email,)).fetchone()
         return row["id"] if row else None
     finally:
@@ -122,7 +122,8 @@ def mark_envio(envio_id, status, message_id=None, error=None):
 def add_supresion(email, motivo="baja"):
     email = (email or "").strip().lower()
     conn = get_conn()
-    conn.execute("INSERT OR REPLACE INTO supresion (email,motivo) VALUES (?,?)", (email, motivo))
+    conn.execute("INSERT INTO supresion (email,motivo) VALUES (?,?) "
+                 "ON CONFLICT(email) DO UPDATE SET motivo=excluded.motivo", (email, motivo))
     conn.commit()
     conn.close()
 
@@ -190,7 +191,8 @@ def kv_get(clave, default=None):
 
 def kv_set(clave, valor):
     conn = get_conn()
-    conn.execute("INSERT OR REPLACE INTO kv (clave,valor) VALUES (?,?)", (clave, str(valor)))
+    conn.execute("INSERT INTO kv (clave,valor) VALUES (?,?) "
+                 "ON CONFLICT(clave) DO UPDATE SET valor=excluded.valor", (clave, str(valor)))
     conn.commit()
     conn.close()
 
