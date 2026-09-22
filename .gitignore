@@ -8,3 +8,4 @@ aeltra.db-shm
 *.log
 client_secret.json
 token.json
+.mcp.json
