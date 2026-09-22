@@ -8,10 +8,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: aeltra-outbound
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    # EasyPanel rutea al puerto interno vía su proxy (configurá el dominio → puerto 8000).
+    # Sin container_name ni mapeo de puertos al host, para no chocar con otros servicios.
+    expose:
+      - "8000"
     environment:
       # ── Envío por SMTP (Zoho, dominio propio autenticado) ──
       SENDER_BACKEND: "${SENDER_BACKEND:-smtp}"
