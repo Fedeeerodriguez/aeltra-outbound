@@ -716,6 +716,7 @@ Le dejo la puerta abierta: cuando quieran mirar cómo ahorrar tiempo administrat
           if(current===a && !dialog.hidden) $('d-task').textContent=AG[a].task; }
       }
       const ea=$('hud-act'); if(ea) ea.textContent=activos;
+      refreshDone(d);   // reusa el MISMO fetch (antes refreshDone pegaba solo cada 2s)
     }catch(e){}
   }
   async function refreshStats(){
@@ -818,13 +819,13 @@ Le dejo la puerta abierta: cuando quieran mirar cómo ahorrar tiempo administrat
     $('respop-body').textContent=(d.resultado||d.mensaje||'(sin detalle todavía)'); $('respop').hidden=false; }
   ORDER.forEach(a=>{ const b=$('done-'+a); if(b) b.addEventListener('click',()=>openRespop(a)); });
   $('respop-x')?.addEventListener('click',()=>{$('respop').hidden=true;});
-  async function refreshDone(){ try{ const d=await (await fetch('/api/agentes')).json();
+  async function refreshDone(d){ try{ if(!d) d=await (await fetch('/api/agentes')).json();
     for(const bk in d){ const a=REV[bk]; if(!a)continue; const s=d[bk]||{};
       if(s.estado==='listo') showDone(a,true,s.titulo,s.resultado,s.mensaje);
       else if(s.estado==='error') showDone(a,false,s.titulo,s.resultado,s.mensaje);
       else hideDone(a);
     } }catch(e){} }
-  setInterval(refreshDone,2000); refreshDone();
+  // refreshDone ya no tiene su propio intervalo: lo dispara refreshAgents con el mismo fetch.
 
   /* ==== lanzar campaña desde la pestaña Campañas ==== */
   $('camp2-go')?.addEventListener('click',async()=>{
