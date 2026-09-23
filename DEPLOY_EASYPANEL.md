@@ -49,6 +49,10 @@ IMAP_PASS=<mismo app password de Zoho>
 PROSPECTS_MOCK=false
 APIFY_TOKEN=...
 
+# --- Base de datos: Supabase (Postgres). Sin esta variable usa SQLite en el volumen. ---
+# Formato: postgresql://USER:PASSWORD@HOST:5432/postgres  (password percent-encodeada)
+DATABASE_URL=<connection string de Supabase (pooler)>
+
 # --- Seguridad / compliance (CRÍTICO en producción) ---
 BASIC_AUTH_USER=aeltra
 BASIC_AUTH_PASS=<una-contraseña-fuerte>
@@ -58,6 +62,9 @@ UNSUB_BASE=https://TU-DOMINIO/api/baja      # <-- NO localhost. El dominio públ
 DEFAULT_WINDOW_HOURS=6
 DAILY_SEND_CAP=40
 ```
+
+> **`DATABASE_URL`** activa Supabase/Postgres. El motor crea las tablas solo al arrancar.
+> Sin ella, sigue en SQLite (volumen `/data`). Es opt-in y reversible.
 
 > Los valores de Zoho (SMTP/IMAP) los tenés en tu `.env` local. El **App Password** es el mismo para SMTP e IMAP.
 
