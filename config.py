@@ -52,6 +52,25 @@ COMPANY_NAME = os.getenv("COMPANY_NAME", "Aeltra")
 COMPANY_TAGLINE = os.getenv("COMPANY_TAGLINE", "Software & IA")
 UNSUB_BASE = os.getenv("UNSUB_BASE", "http://localhost:8000/api/baja")
 
+# Secreto para firmar los links de baja (HMAC). Si no se setea, cae al pass de
+# basic-auth; si tampoco existe, usa un default local (solo dev).
+UNSUB_SECRET = os.getenv("UNSUB_SECRET", "") or BASIC_AUTH_PASS or "aeltra-unsub-dev"
+
+
+def unsub_sign(email: str) -> str:
+    """Token corto (HMAC-SHA256 truncado) que ata el link de baja a ese email."""
+    import hmac, hashlib
+    email = (email or "").strip().lower()
+    return hmac.new(UNSUB_SECRET.encode("utf-8"), email.encode("utf-8"),
+                    hashlib.sha256).hexdigest()[:24]
+
+
+def unsub_verify(email: str, token: str) -> bool:
+    import hmac
+    if not token:
+        return False
+    return hmac.compare_digest(unsub_sign(email), (token or "").strip())
+
 # Ritmo
 DEFAULT_WINDOW_HOURS = float(os.getenv("DEFAULT_WINDOW_HOURS", "6"))
 DAILY_SEND_CAP = int(os.getenv("DAILY_SEND_CAP", "40"))

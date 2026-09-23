@@ -20,7 +20,7 @@ def _merge(texto: str, variables: dict) -> str:
 
 def _footer_html(email: str) -> str:
     # Pie liviano y humano (ayuda a caer en Principal en vez de Promociones).
-    unsub = f"{config.UNSUB_BASE}?email={quote(email)}"
+    unsub = f"{config.UNSUB_BASE}?email={quote(email)}&t={config.unsub_sign(email)}"
     return (
         '<br>--<br>'
         f'<span style="color:#777;font-size:13px">{config.COMPANY_NAME}. '

@@ -4,9 +4,9 @@ import os
 import csv
 import io
 import asyncio
-from urllib.parse import unquote
+from urllib.parse import unquote, quote
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
@@ -369,16 +369,42 @@ async def api_test(req: TestReq):
 
 
 # ── Baja (opt-out) ──
+# GET solo MUESTRA una confirmación (los escáneres de correo hacen GET → no dan
+# de baja sin querer). La baja real ocurre en POST, y solo con token válido
+# (evita que un tercero dé de baja a otro adivinando el email).
+_BAJA_WRAP = ("<div style='font:16px/1.6 Arial;max-width:520px;margin:80px auto;"
+              "text-align:center'>%s<p style='color:#889'>Aeltra · Software &amp; IA</p></div>")
+
+
 @app.get("/api/baja", response_class=HTMLResponse)
-def api_baja(email: str = ""):
+def api_baja(email: str = "", t: str = ""):
     email = unquote(email)
-    if email:
-        pipeline.add_supresion(email, "baja")
-    return HTMLResponse(
-        "<div style='font:16px/1.6 Arial;max-width:520px;margin:80px auto;text-align:center'>"
-        "<h2>Listo ✅</h2><p>Diste de baja <b>%s</b>. No vas a recibir más correos nuestros.</p>"
-        "<p style='color:#889'>Aeltra · Software &amp; IA</p></div>" % (email or "tu correo")
-    )
+    if not email or not config.unsub_verify(email, t):
+        return HTMLResponse(_BAJA_WRAP % (
+            "<h2>Link inválido</h2><p>No pudimos validar tu baja. "
+            "Respondé <b>BAJA</b> al correo y te sacamos de la lista.</p>"), status_code=400)
+    # Formulario que hace POST (un solo click). No suprime nada todavía.
+    return HTMLResponse(_BAJA_WRAP % (
+        "<h2>Darte de baja</h2><p>Vas a dejar de recibir correos en <b>%s</b>.</p>"
+        "<form method='post' action='/api/baja'>"
+        "<input type='hidden' name='email' value='%s'>"
+        "<input type='hidden' name='t' value='%s'>"
+        "<button type='submit' style='font:16px Arial;padding:10px 22px;border:0;"
+        "border-radius:8px;background:#12324e;color:#fff;cursor:pointer'>"
+        "Confirmar baja</button></form>" % (email, quote(email), t)))
+
+
+@app.post("/api/baja", response_class=HTMLResponse)
+def api_baja_post(email: str = Form(""), t: str = Form("")):
+    email = unquote(email)
+    if not email or not config.unsub_verify(email, t):
+        return HTMLResponse(_BAJA_WRAP % (
+            "<h2>Link inválido</h2><p>Respondé <b>BAJA</b> al correo y te sacamos "
+            "de la lista.</p>"), status_code=400)
+    pipeline.add_supresion(email, "baja")
+    return HTMLResponse(_BAJA_WRAP % (
+        "<h2>Listo ✅</h2><p>Diste de baja <b>%s</b>. No vas a recibir más correos "
+        "nuestros.</p>" % email))
 
 
 # ── Agentes (estado en vivo + chat directo) ──

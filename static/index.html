@@ -203,7 +203,7 @@ img{image-rendering:pixelated}
         <div class="navitem" data-v="contactos"><span class="i"></span> Contactos</div>
         <div class="navitem" data-v="rutinas"><span class="i"></span> Rutinas</div>
       </div>
-      <div class="note">Casilla<br><b>contacto.aeltra@gmail.com</b><br>Envío Gmail · OAuth</div>
+      <div class="note" id="side-casilla">Casilla<br><b>contacto@aeltra.company</b><br>Envío SMTP · Zoho</div>
     </div>
   </aside>
 
@@ -311,12 +311,8 @@ img{image-rendering:pixelated}
             </div>
             <div>
               <p class="lbl">Pipeline</p>
-              <table class="htable"><thead><tr><th>Comercio</th><th>Email</th><th>Estado</th></tr></thead><tbody>
-                <tr><td>Ferretería El Tornillo</td><td>contacto@eltornillo.com.ar</td><td><span class="tag">respondió</span></td></tr>
-                <tr><td>Gimnasio Fuerza Norte</td><td>hola@fuerzanorte.com</td><td><span class="tag">reunión</span></td></tr>
-                <tr><td>Veterinaria Patitas</td><td>info@patitas.vet</td><td><span class="tag">contactado</span></td></tr>
-                <tr><td>Deco Hogar</td><td>ventas@decohogar.com.ar</td><td><span class="tag">prospecto</span></td></tr>
-              </tbody></table>
+              <table class="htable"><thead><tr><th>Comercio</th><th>Email</th><th>Estado</th></tr></thead>
+              <tbody id="home-pipe"><tr><td colspan="3" style="color:#889">Cargando…</td></tr></tbody></table>
             </div>
           </div>
         </div>
@@ -732,8 +728,21 @@ Le dejo la puerta abierta: cuando quieran mirar cómo ahorrar tiempo administrat
       const es=$('hud-estado'); if(es) es.textContent='OPERATIVO';
     }catch(e){}
   }
-  setInterval(refreshAgents,2000); setInterval(refreshStats,3000);
+  // Poll suave (antes 2s/3s → saturaba con ~115 req/20s a /api/agentes).
+  setInterval(refreshAgents,6000); setInterval(refreshStats,8000);
   refreshAgents(); refreshStats();
+
+  // Panel de inicio: mini-pipeline con datos REALES (antes eran filas fijas de ejemplo).
+  async function refreshHomePipe(){ try{
+    const el=$('home-pipe'); if(!el) return;
+    const d=await (await fetch('/api/pipeline')).json();
+    const rows=(d.contactos||[]).slice(0,6);
+    el.innerHTML = rows.length
+      ? rows.map(c=>`<tr><td>${c.empresa||c.nombre||'—'}</td><td>${c.email||''}</td>`+
+          `<td><span class="tag">${PIPE_LABEL[c.estado]||c.estado||''}</span></td></tr>`).join('')
+      : '<tr><td colspan="3" style="color:#889">Sin contactos todavía</td></tr>';
+  }catch(e){} }
+  setInterval(refreshHomePipe,15000); refreshHomePipe();
 
   // agentes .md de Claude Code (corren con tu Claude Max, SIN tokens de API)
   const CLAUDE={nico:'aeltra-orquestador',lupe:'aeltra-buscador',vera:'aeltra-copywriter',tino:'aeltra-ejecutor'};
