@@ -4,7 +4,7 @@ import os
 import csv
 import io
 import asyncio
-from urllib.parse import unquote, quote
+from urllib.parse import unquote, quote, urlparse
 
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
@@ -18,6 +18,7 @@ import pipeline
 import worker
 import scheduler
 import claude_bridge
+import db
 from db import init_db, get_conn
 from worker import run_loop
 from agents.orchestrator import lanzar_campania, parse_brief
@@ -138,6 +139,11 @@ def api_health():
         "reply_backend": config.reply_backend(),           # gmail (OAuth) | imap (Zoho)
         "daily_cap": config.DAILY_SEND_CAP,
         "enviados_hoy": pipeline.enviados_hoy(),
+        # Diagnóstico de entorno (sin secretos): confirma DATABASE_URL y UNSUB_BASE.
+        "db": "postgres" if db.IS_PG else "sqlite",      # postgres = Supabase conectado
+        "unsub_host": urlparse(config.UNSUB_BASE).hostname or "",
+        "unsub_ok": bool(config.UNSUB_BASE) and "localhost" not in config.UNSUB_BASE
+                    and "TU-DOMINIO" not in config.UNSUB_BASE,
     }
 
 
