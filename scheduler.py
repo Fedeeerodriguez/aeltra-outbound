@@ -73,6 +73,16 @@ def _fire_safe(r):
             claude_bridge.run_agent(agente, instr)
         elif r["tipo"] == "busqueda":
             search_agent.buscar(parse_brief(instr))
+        elif r["tipo"] == "secuencia":
+            # Rutina autónoma: prospecta N nuevos del nicho + encola secuencia 3 pasos
+            # con el copy guardado (JSON en instruccion). Sin tokens de API.
+            import json as _json
+            import campaigns
+            cfg = _json.loads(instr or "{}")
+            campaigns.lanzar_secuencia_rutina(
+                cfg.get("nicho", "constructoras"), cfg.get("pais", "Argentina"),
+                int(cfg.get("cantidad", 7)), float(cfg.get("ventana_horas", 4)),
+                cfg.get("pasos") or [], float(cfg.get("delay2", 24)), float(cfg.get("delay3", 48)))
         else:
             lanzar_campania(instr)
     except Exception as e:
