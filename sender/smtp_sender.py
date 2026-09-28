@@ -2,6 +2,7 @@
 """Sender por SMTP (Gmail App Password). Pluggable: swappable por Resend/SES/Smartlead."""
 import smtplib
 import ssl
+import itertools
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.message import EmailMessage
@@ -15,16 +16,24 @@ class SMTPSender(Sender):
     def __init__(self):
         self.host = config.SMTP_HOST
         self.port = config.SMTP_PORT
-        self.user = config.SMTP_USER
+        self.user = config.SMTP_USER          # login SMTP (siempre el mismo buzón real)
         self.password = config.SMTP_PASS
         self.from_name = config.FROM_NAME
         self.from_email = config.FROM_EMAIL
+        # Pool de remitentes: si hay FROM_ALIASES, rota entre ellos; si no, usa el From de siempre.
+        # OJO: con SMTP de un solo login, los alias deben ser alias del MISMO buzón (self.user).
+        self._pool = list(config.FROM_ALIASES) or [(self.from_email, self.from_name)]
+        self._cycle = itertools.cycle(self._pool)
+
+    def _next_from(self):
+        return next(self._cycle)
 
     def send(self, to_email, to_name, subject, html, text) -> str:
         if not (self.user and self.password):
             raise RuntimeError("SMTP no configurado: falta SMTP_USER / SMTP_PASS en .env")
 
-        msg_id = make_msgid(domain=self.from_email.split("@")[-1])
+        from_email, from_name = self._next_from()   # rotación round-robin
+        msg_id = make_msgid(domain=from_email.split("@")[-1])
         if html:
             msg = MIMEMultipart("alternative")
             msg.attach(MIMEText(text, "plain", "utf-8"))
@@ -34,10 +43,10 @@ class SMTPSender(Sender):
             msg = EmailMessage()
             msg.set_content(text)
         msg["Subject"] = subject
-        msg["From"] = formataddr((self.from_name, self.from_email))
+        msg["From"] = formataddr((from_name, from_email))
         msg["To"] = formataddr((to_name or "", to_email))
         msg["Message-ID"] = msg_id
-        msg["List-Unsubscribe"] = f"<mailto:{self.from_email}?subject=BAJA>"
+        msg["List-Unsubscribe"] = f"<mailto:{from_email}?subject=BAJA>"
 
         ctx = ssl.create_default_context()
         if self.port == 465:

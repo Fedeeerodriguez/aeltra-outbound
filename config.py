@@ -31,6 +31,34 @@ SMTP_PASS = os.getenv("SMTP_PASS", "")
 FROM_NAME = os.getenv("FROM_NAME", "Aeltra")
 FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USER)
 
+def _parse_aliases(raw):
+    """FROM_ALIASES: rota el From entre varias direcciones (mismo login SMTP).
+    Acepta JSON [{"email","name"}] o 'email:Nombre,email2:Nombre2'.
+    Devuelve lista de (email, name). Vacío = comportamiento de siempre (una sola From)."""
+    raw = (raw or "").strip()
+    if not raw:
+        return []
+    import json
+    if raw.startswith("["):
+        try:
+            return [(d["email"].strip(), (d.get("name") or FROM_NAME).strip())
+                    for d in json.loads(raw) if d.get("email")]
+        except Exception:
+            return []
+    out = []
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if ":" in part:
+            e, n = part.split(":", 1)
+        else:
+            e, n = part, FROM_NAME
+        out.append((e.strip(), n.strip()))
+    return out
+
+FROM_ALIASES = _parse_aliases(os.getenv("FROM_ALIASES", ""))
+
 # Prospectos
 PROSPECTS_MOCK = _b(os.getenv("PROSPECTS_MOCK"), True)
 APIFY_TOKEN = os.getenv("APIFY_TOKEN", "")
