@@ -22,6 +22,7 @@ services:
       SMTP_PASS: "${SMTP_PASS}"
       FROM_NAME: "${FROM_NAME:-Aeltra}"
       FROM_EMAIL: "${FROM_EMAIL}"
+      FROM_ALIASES: "${FROM_ALIASES:-}"      # rotación de remitentes (alias del mismo buzón)
       PLAIN_TEXT_ONLY: "${PLAIN_TEXT_ONLY:-true}"
       # ── Lectura de respuestas por IMAP (mismo buzón Zoho) ──
       IMAP_HOST: "${IMAP_HOST:-imappro.zoho.com}"
