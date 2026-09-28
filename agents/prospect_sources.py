@@ -44,14 +44,17 @@ def _mock(nicho, pais, cantidad):
     return out
 
 
-def apify_google_maps(nicho, pais, cantidad):
-    """Scrapea Google Maps con Apify. Best-effort: si falla o no hay token, cae a mock."""
+def apify_google_maps(nicho, pais, cantidad, search_terms=None):
+    """Scrapea Google Maps con Apify. Best-effort: si falla o no hay token, cae a mock.
+    search_terms: lista de queries geográficas (rotación multi-ciudad/país). Si viene vacía
+    usa el clásico "nicho pais"."""
     if config.PROSPECTS_MOCK or not config.APIFY_TOKEN:
         return _mock(nicho, pais, cantidad)
     try:
         actor = "compass~crawler-google-places"
         url = f"https://api.apify.com/v2/acts/{actor}/run-sync-get-dataset-items?token={config.APIFY_TOKEN}"
-        payload = {"searchStringsArray": [f"{nicho} {pais}"], "maxCrawledPlaces": cantidad,
+        terms = list(search_terms) if search_terms else [f"{nicho} {pais}"]
+        payload = {"searchStringsArray": terms, "maxCrawledPlaces": cantidad,
                    "language": "es"}
         r = httpx.post(url, json=payload, timeout=180)
         r.raise_for_status()
@@ -146,13 +149,14 @@ def google_places(nicho, pais, cantidad):
         return []
 
 
-def search_prospects(nicho, pais, cantidad, fuentes=("apify", "web")):
-    """Combina fuentes, deduplica por email y devuelve hasta `cantidad`."""
+def search_prospects(nicho, pais, cantidad, fuentes=("apify", "web"), search_terms=None):
+    """Combina fuentes, deduplica por email y devuelve hasta `cantidad`.
+    search_terms: rotación geográfica (multi-ciudad/país) que se pasa a Apify."""
     por_fuente = max(1, cantidad // max(1, len(fuentes)))
     juntos = []
     for f in fuentes:
         if f == "apify":
-            juntos += apify_google_maps(nicho, pais, por_fuente + 5)
+            juntos += apify_google_maps(nicho, pais, por_fuente + 5, search_terms=search_terms)
         elif f in ("google_places", "google_maps", "maps"):
             juntos += google_places(nicho, pais, por_fuente + 5)
         elif f == "web":

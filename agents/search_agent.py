@@ -14,10 +14,12 @@ def buscar(brief: dict) -> list:
     pais = brief.get("pais", "Argentina")
     cantidad = int(brief.get("cantidad", 25))
     fuentes = tuple(brief.get("fuentes", ["apify", "web"]))
+    search_terms = brief.get("search_terms")
 
+    zona = (", ".join(search_terms) if search_terms else pais)
     activity.update("busqueda", "trabajando",
-                    f"Buscando {cantidad} de «{nicho}» en {pais} (fuentes: {', '.join(fuentes)})…", 5)
-    prospectos = prospect_sources.search_prospects(nicho, pais, cantidad, fuentes)
+                    f"Buscando {cantidad} de «{nicho}» en {zona[:80]} (fuentes: {', '.join(fuentes)})…", 5)
+    prospectos = prospect_sources.search_prospects(nicho, pais, cantidad, fuentes, search_terms=search_terms)
     total = len(prospectos)
     activity.update("busqueda", "trabajando",
                     f"Encontrados {total}. Validando y guardando en la base…", 30)

@@ -12,6 +12,36 @@ import pipeline
 from db import get_conn
 from agents import search_agent
 
+# Rotación geográfica: Argentina (varias provincias) + países de habla hispana.
+# Cada corrida toma las próximas K zonas → Apify trae negocios frescos cada día.
+LOCACIONES = [
+    "Buenos Aires Argentina", "Santiago Chile", "Montevideo Uruguay", "Ciudad de México México",
+    "Córdoba Argentina", "Lima Perú", "Asunción Paraguay", "Guadalajara México",
+    "Rosario Argentina", "Valparaíso Chile", "Monterrey México", "Mendoza Argentina",
+    "Arequipa Perú", "Punta del Este Uruguay", "Puebla México", "La Plata Argentina",
+    "Concepción Chile", "Ciudad del Este Paraguay", "Querétaro México", "Mar del Plata Argentina",
+    "Trujillo Perú", "Salto Uruguay", "Tijuana México", "San Miguel de Tucumán Argentina",
+    "Antofagasta Chile", "Mérida México", "Salta Argentina", "Neuquén Argentina",
+    "Santa Fe Argentina", "Bahía Blanca Argentina",
+]
+ZONAS_POR_CORRIDA = 4
+
+
+def _next_locs(nicho, k=ZONAS_POR_CORRIDA):
+    """Devuelve las próximas k zonas para el nicho y avanza el puntero (persistido en kv)."""
+    key = f"rot::{nicho}"
+    try:
+        start = int(pipeline.kv_get(key) or 0)
+    except Exception:
+        start = 0
+    n = len(LOCACIONES)
+    locs = [LOCACIONES[(start + i) % n] for i in range(k)]
+    try:
+        pipeline.kv_set(key, str((start + k) % n))
+    except Exception:
+        pass
+    return locs
+
 
 def _find_or_create(nicho, pasos, delay2, delay3, ventana):
     """Devuelve (campania_id, {paso: plantilla_id}). Crea la campaña una sola vez por nicho."""
@@ -49,9 +79,12 @@ def lanzar_secuencia_rutina(nicho, pais, cantidad, ventana_horas, pasos, delay2,
         return {"error": "faltan los copys de los pasos"}
     cid, pids = _find_or_create(nicho, pasos, delay2, delay3, ventana_horas)
 
-    # Pedimos de más porque el dedupe descarta a los ya conocidos.
-    brief = {"nicho": nicho, "pais": pais, "cantidad": max(int(cantidad) * 3, int(cantidad) + 15),
-             "ventana_horas": ventana_horas, "fuentes": ["apify", "web"]}
+    # Rotación de zonas (AR + LatAm hispano) → leads frescos cada día. Pedimos de más
+    # porque el dedupe descarta a los ya conocidos.
+    zonas = _next_locs(nicho)
+    terms = [f"{nicho} {z}" for z in zonas]
+    brief = {"nicho": nicho, "pais": pais, "cantidad": max(int(cantidad) * 6, 45),
+             "ventana_horas": ventana_horas, "fuentes": ["apify"], "search_terms": terms}
     prospectos = search_agent.buscar(brief)
 
     conn = get_conn()
