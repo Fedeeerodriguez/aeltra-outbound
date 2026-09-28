@@ -78,28 +78,46 @@ def lanzar_secuencia_rutina(nicho, pais, cantidad, ventana_horas, pasos, delay2,
     if not pasos:
         return {"error": "faltan los copys de los pasos"}
     cid, pids = _find_or_create(nicho, pasos, delay2, delay3, ventana_horas)
-
-    # Rotación de zonas (AR + LatAm hispano) → leads frescos cada día. Pedimos de más
-    # porque el dedupe descarta a los ya conocidos.
-    zonas = _next_locs(nicho)
-    terms = [f"{nicho} {z}" for z in zonas]
-    brief = {"nicho": nicho, "pais": pais, "cantidad": max(int(cantidad) * 6, 45),
-             "ventana_horas": ventana_horas, "fuentes": ["apify"], "search_terms": terms}
-    prospectos = search_agent.buscar(brief)
+    cantidad = int(cantidad)
 
     conn = get_conn()
+
+    def _sin_envio_ni_supresion(cont_id, email):
+        if conn.execute("SELECT 1 FROM envios WHERE contacto_id=? LIMIT 1", (cont_id,)).fetchone():
+            return False   # ya fue contactado alguna vez
+        if conn.execute("SELECT 1 FROM supresion WHERE email=? LIMIT 1", (email,)).fetchone():
+            return False   # opt-out
+        return True
+
     nuevos = []
-    for pr in prospectos:
-        cont_id = pr.get("contacto_id")
-        if not cont_id:
-            continue
-        # Nunca re-emailar: si el contacto ya tiene CUALQUIER envío, se saltea.
-        ya = conn.execute("SELECT 1 FROM envios WHERE contacto_id=? LIMIT 1", (cont_id,)).fetchone()
-        if ya:
-            continue
-        nuevos.append(pr)
-        if len(nuevos) >= int(cantidad):
+    vistos = set()
+
+    # 1) BACKLOG: primero usamos leads del nicho que YA tenemos y nunca enviamos.
+    for r in conn.execute(
+            "SELECT id, email, empresa FROM contactos WHERE nicho=? AND estado='prospecto' ORDER BY id",
+            (nicho,)):
+        row = dict(r)
+        if len(nuevos) >= cantidad:
             break
+        if row["email"] in vistos or not _sin_envio_ni_supresion(row["id"], row["email"]):
+            continue
+        vistos.add(row["email"])
+        nuevos.append({"contacto_id": row["id"], "email": row["email"], "empresa": row["empresa"]})
+
+    # 2) Si el backlog no alcanza, recién ahí scrapeamos NUEVOS (rotación de zonas).
+    if len(nuevos) < cantidad:
+        zonas = _next_locs(nicho)
+        terms = [f"{nicho} {z}" for z in zonas]
+        brief = {"nicho": nicho, "pais": pais, "cantidad": max(cantidad * 6, 45),
+                 "ventana_horas": ventana_horas, "fuentes": ["apify"], "search_terms": terms}
+        for pr in search_agent.buscar(brief):
+            cont_id = pr.get("contacto_id")
+            if len(nuevos) >= cantidad:
+                break
+            if not cont_id or pr["email"] in vistos or not _sin_envio_ni_supresion(cont_id, pr["email"]):
+                continue
+            vistos.add(pr["email"])
+            nuevos.append(pr)
 
     n = len(nuevos)
     intervalo = (float(ventana_horas) * 3600.0 / n) if n else 0
