@@ -144,6 +144,7 @@ def api_health():
         "unsub_host": urlparse(config.UNSUB_BASE).hostname or "",
         "unsub_ok": bool(config.UNSUB_BASE) and "localhost" not in config.UNSUB_BASE
                     and "TU-DOMINIO" not in config.UNSUB_BASE,
+        "from_aliases": [a[0] for a in config.FROM_ALIASES],  # rotación de remitentes (vacío = solo FROM_EMAIL)
     }
 
 
