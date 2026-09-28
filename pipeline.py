@@ -81,6 +81,20 @@ def create_plantilla(campania_id, asunto, cuerpo, variante="A", paso=1):
 # ── Envíos (cola paceada) ──
 def enqueue_envio(contacto_id, campania_id, plantilla_id, email, scheduled_at, paso=1):
     conn = get_conn()
+    # Dedup anti re-contacto: un mail INICIAL (paso=1) no se re-encola a quien
+    # ya recibió uno antes (en cualquier campaña) ni a suprimidos/rebotados.
+    # Los follow-ups (paso 2/3) no pasan por acá con paso=1, así que no se ven afectados.
+    if paso == 1:
+        em = (email or "").strip().lower()
+        sup = conn.execute("SELECT 1 FROM supresion WHERE email=?", (em,)).fetchone()
+        cold = conn.execute(
+            "SELECT 1 FROM envios WHERE lower(email)=? AND paso=1 LIMIT 1", (em,)
+        ).fetchone()
+        if sup or cold:
+            conn.close()
+            motivo = "suprimido/rebote" if sup else "ya contactado antes"
+            print(f"[dedup] salteo mail inicial a {em} ({motivo})")
+            return None
     cur = conn.execute(
         """INSERT INTO envios (contacto_id,campania_id,plantilla_id,email,status,scheduled_at,paso)
            VALUES (?,?,?,?, 'queued', ?, ?)""",

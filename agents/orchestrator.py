@@ -147,10 +147,10 @@ def node_execute(state: CampaignState) -> CampaignState:
     encolados = 0
     for i, p in enumerate(prospectos):
         sched = (ahora + timedelta(seconds=i * intervalo)).isoformat(timespec="seconds")
-        pipeline.enqueue_envio(
+        if pipeline.enqueue_envio(
             p["contacto_id"], state["campania_id"], state["plantilla_id"], p["email"], sched,
-        )
-        encolados += 1
+        ):
+            encolados += 1   # solo cuenta si NO fue salteado por dedup/supresión
 
     avisos = list(state.get("avisos", []))
     objetivo_n = int(state["brief"]["cantidad"])
