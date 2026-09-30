@@ -362,6 +362,17 @@ def api_dashboard():
     return pipeline.metricas()
 
 
+@app.get("/api/nichos")
+def api_nichos():
+    return {"nichos": pipeline.nichos_disponibles()}
+
+
+@app.get("/api/metricas")
+def api_metricas(nicho: str = "", desde: str = "", hasta: str = ""):
+    """Métricas filtrables por nicho y rango de fechas (para la sección Analytics)."""
+    return pipeline.metricas_dashboard(nicho or None, desde or None, hasta or None)
+
+
 # ── Historial por agente ──
 @app.get("/api/agentes/{slot}/historial")
 def api_historial(slot: str):

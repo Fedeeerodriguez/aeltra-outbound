@@ -340,3 +340,75 @@ def auto_no_respondio(dias_habiles=3):
     conn.commit()
     conn.close()
     return movidos
+
+
+# ── Dashboard de métricas (con filtros por nicho y fecha) ──
+def nichos_disponibles():
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT DISTINCT nicho FROM contactos WHERE nicho IS NOT NULL AND nicho <> '' ORDER BY nicho"
+    ).fetchall()
+    conn.close()
+    return [dict(r)["nicho"] for r in rows]
+
+
+def metricas_dashboard(nicho=None, desde=None, hasta=None):
+    """Métricas para el dashboard, filtrables por nicho y rango de fechas.
+    - enviados / por_dia: filtrados por fecha (sent_at) y nicho.
+    - rebotes / respuestas: acumulados por nicho (el estado no es por-fecha)."""
+    conn = get_conn()
+
+    def sc(q, a=()):
+        r = conn.execute(q, a).fetchone()
+        return (list(r)[0] if r else 0) or 0
+
+    wd, ad = ["status='sent'"], []
+    if desde:
+        wd.append("substr(sent_at,1,10) >= ?"); ad.append(desde)
+    if hasta:
+        wd.append("substr(sent_at,1,10) <= ?"); ad.append(hasta)
+
+    def env_count(nk=None):
+        w, a = list(wd), list(ad)
+        if nk:
+            w.append("contacto_id IN (SELECT id FROM contactos WHERE nicho=?)"); a.append(nk)
+        return sc("SELECT COUNT(*) FROM envios WHERE " + " AND ".join(w), tuple(a))
+
+    def cont_count(nk, estados):
+        w, a = ["estado IN (%s)" % ",".join("?" * len(estados))], list(estados)
+        if nk:
+            w.append("nicho=?"); a.append(nk)
+        return sc("SELECT COUNT(*) FROM contactos WHERE " + " AND ".join(w), tuple(a))
+
+    # Serie por día (respeta nicho + fechas)
+    w, a = list(wd), list(ad)
+    if nicho:
+        w.append("contacto_id IN (SELECT id FROM contactos WHERE nicho=?)"); a.append(nicho)
+    por_dia = [{"fecha": dict(r)["f"], "enviados": dict(r)["n"]} for r in conn.execute(
+        "SELECT substr(sent_at,1,10) f, COUNT(*) n FROM envios WHERE " + " AND ".join(w) +
+        " GROUP BY substr(sent_at,1,10) ORDER BY f", tuple(a))]
+
+    enviados = env_count(nicho)
+    rebotes = cont_count(nicho, ["rebote"])
+    respuestas = cont_count(nicho, ["respondio", "reunion", "cerrado"])
+
+    nichos = [nicho] if nicho else nichos_disponibles()
+    por_nicho = [{
+        "nicho": nk,
+        "enviados": env_count(nk),
+        "rebotes": cont_count(nk, ["rebote"]),
+        "respuestas": cont_count(nk, ["respondio", "reunion", "cerrado"]),
+    } for nk in nichos]
+
+    conn.close()
+    return {
+        "filtros": {"nicho": nicho or "", "desde": desde or "", "hasta": hasta or ""},
+        "totales": {
+            "enviados": enviados, "rebotes": rebotes, "respuestas": respuestas,
+            "tasa_entrega": round(100 * (enviados - rebotes) / enviados, 1) if enviados else 0,
+            "tasa_respuesta": round(100 * respuestas / enviados, 1) if enviados else 0,
+        },
+        "por_dia": por_dia,
+        "por_nicho": por_nicho,
+        "nichos": nichos_disponibles(),
+    }

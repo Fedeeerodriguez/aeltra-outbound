@@ -379,6 +379,26 @@ Le dejo la puerta abierta: cuando quieran mirar cómo ahorrar tiempo administrat
         </div>
         <p class="lbl">Cómo le fue a cada campaña (éxito = respuestas/agendas)</p>
         <div id="db-camps">Cargando…</div>
+
+        <hr style="border:0;border-top:1px solid #d7dbe3;margin:18px 0">
+        <p class="lbl">📊 Analytics — filtrá por nicho y fecha</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+          <select id="mx-nicho" class="inp" style="max-width:230px"><option value="">Todos los nichos</option></select>
+          <input type="date" id="mx-desde" class="inp" style="max-width:160px" title="Desde">
+          <input type="date" id="mx-hasta" class="inp" style="max-width:160px" title="Hasta">
+          <button class="b" id="mx-go">Filtrar</button>
+          <span id="mx-msg" style="font-size:13px;color:#667"></span>
+        </div>
+        <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));margin-bottom:12px">
+          <div class="kpi"><div class="k">Enviados (filtro)</div><div class="v" id="mx-env">0</div></div>
+          <div class="kpi"><div class="k">Tasa entrega</div><div class="v" id="mx-tent">0%</div></div>
+          <div class="kpi"><div class="k">Respuestas</div><div class="v" id="mx-resp">0</div></div>
+          <div class="kpi"><div class="k">Rebotes</div><div class="v" id="mx-reb">0</div></div>
+        </div>
+        <div style="background:#fff;border:1px solid #d7dbe3;border-radius:10px;padding:12px;margin-bottom:12px">
+          <div class="lbl" style="margin:0 0 6px">Enviados por día</div><canvas id="mx-chart-dia" height="110"></canvas></div>
+        <div style="background:#fff;border:1px solid #d7dbe3;border-radius:10px;padding:12px">
+          <div class="lbl" style="margin:0 0 6px">Por nicho (enviados / respuestas / rebotes)</div><canvas id="mx-chart-nicho" height="110"></canvas></div>
       </div></div>
     </section>
 
@@ -392,6 +412,7 @@ Le dejo la puerta abierta: cuando quieran mirar cómo ahorrar tiempo administrat
   </main>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
   const navs=[...document.querySelectorAll('.navitem')];
   navs.forEach(n=>n.addEventListener('click',()=>{
@@ -904,8 +925,39 @@ Le dejo la puerta abierta: cuando quieran mirar cómo ahorrar tiempo administrat
   }catch(e){} }
   window._mover=async function(id,estado){ try{ await fetch('/api/pipeline/mover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,estado:estado})}); loadPipeline(); }catch(e){} };
 
+  /* ==== Analytics (Chart.js, filtros nicho/fecha) ==== */
+  let _chDia=null, _chNicho=null, _nichosLoaded=false;
+  async function _loadNichos(){ if(_nichosLoaded)return; try{
+    const d=await (await fetch('/api/nichos')).json(); const sel=$('mx-nicho'); if(!sel)return;
+    (d.nichos||[]).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+    _nichosLoaded=true;
+  }catch(e){} }
+  async function loadMetricas(){ try{
+    if(typeof Chart==='undefined')return;   // CDN aún no cargó
+    await _loadNichos();
+    const nicho=$('mx-nicho')?.value||'', desde=$('mx-desde')?.value||'', hasta=$('mx-hasta')?.value||'';
+    const qs=new URLSearchParams(); if(nicho)qs.set('nicho',nicho); if(desde)qs.set('desde',desde); if(hasta)qs.set('hasta',hasta);
+    const m=await (await fetch('/api/metricas?'+qs.toString())).json();
+    const t=m.totales||{}; const set=(id,v)=>{const e=$(id);if(e)e.textContent=v;};
+    set('mx-env',t.enviados||0); set('mx-tent',(t.tasa_entrega||0)+'%'); set('mx-resp',t.respuestas||0); set('mx-reb',t.rebotes||0);
+    const msg=$('mx-msg'); if(msg)msg.textContent=(m.por_dia&&m.por_dia.length)?'':'Sin datos para ese filtro.';
+    // Gráfico por día
+    const dias=(m.por_dia||[]); const dl=dias.map(x=>x.fecha), dv=dias.map(x=>x.enviados);
+    if(_chDia)_chDia.destroy();
+    _chDia=new Chart($('mx-chart-dia'),{type:'line',data:{labels:dl,datasets:[{label:'Enviados',data:dv,borderColor:'#2b6cb0',backgroundColor:'rgba(43,108,176,.12)',fill:true,tension:.3}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+    // Gráfico por nicho
+    const pn=(m.por_nicho||[]); const nl=pn.map(x=>x.nicho.replace(/^(empresas |estudios de |tiendas |clínicas y consultorios )/,''));
+    if(_chNicho)_chNicho.destroy();
+    _chNicho=new Chart($('mx-chart-nicho'),{type:'bar',data:{labels:nl,datasets:[
+      {label:'Enviados',data:pn.map(x=>x.enviados),backgroundColor:'#2b6cb0'},
+      {label:'Respuestas',data:pn.map(x=>x.respuestas),backgroundColor:'#0f7a5a'},
+      {label:'Rebotes',data:pn.map(x=>x.rebotes),backgroundColor:'#c0392b'}]},
+      options:{responsive:true,scales:{y:{beginAtZero:true}}}});
+  }catch(e){} }
+  $('mx-go')?.addEventListener('click',loadMetricas);
+
   navs.forEach(n=>n.addEventListener('click',()=>{ const v=n.dataset.v;
-    if(v==='dashboard')loadDashboard(); if(v==='pipeline')loadPipeline(); }));
+    if(v==='dashboard'){loadDashboard(); loadMetricas();} if(v==='pipeline')loadPipeline(); }));
 </script>
 </body>
 </html>
