@@ -43,6 +43,24 @@ def _cuerpo_texto(msg):
     return "\n".join(partes)
 
 
+_OPTOUT_RE = re.compile(
+    r"\b(baja|unsubscribe|desuscrib\w*|remov\w*)\b|dar de baja|no me escrib|"
+    r"sacar de la lista|no escribir|quit\w* la lista", re.I)
+
+
+def _texto_propio(raw_text):
+    """Devuelve SOLO el texto que escribió la persona (sin la cita del mail original).
+    Clave: nuestro pie dice 'respondé BAJA', que queda citado en casi toda respuesta."""
+    t = re.split(r"\n\s*El .*?escrib[ió]{1,2}:|\nOn .*wrote:|-{2,}\s*Original|"
+                 r"\n_{5,}|\nDe:\s|\nFrom:\s", raw_text or "")[0]
+    lineas = [ln for ln in t.splitlines() if not ln.strip().startswith(">")]
+    return "\n".join(lineas)
+
+
+def _es_opt_out(raw_text):
+    return bool(_OPTOUT_RE.search(_texto_propio(raw_text)))
+
+
 def _es_rebote(frm, subj):
     f = (frm or "").lower(); s = (subj or "").lower()
     return (f.startswith("mailer-daemon@") or f.startswith("postmaster@")
@@ -80,6 +98,19 @@ def _aplicar(frm, subj, get_raw):
         return None
     c = pipeline.find_contact_by_email(frm)
     if c and c.get("estado") in _ESTADOS_ABIERTOS:
+        # Leer el cuerpo para detectar pedido de BAJA (opt-out) en el texto propio.
+        texto = ""
+        try:
+            texto = _cuerpo_texto(email.message_from_bytes(get_raw()))
+        except Exception:
+            pass
+        if _es_opt_out(texto):
+            pipeline.add_supresion(frm, "baja-por-respuesta")
+            pipeline.cancel_pending_envios(c["id"])
+            pipeline.set_estado(c["id"], "perdido")
+            pipeline.add_evento(c["id"], "baja", {"asunto": (subj or "")[:200]})
+            pipeline.log_agente("ejecutor", f"BAJA de {frm} (opt-out)", (subj or "")[:200], True)
+            return "baja"
         pipeline.marcar_respondio(c["id"])
         pipeline.cancel_pending_envios(c["id"])
         pipeline.add_evento(c["id"], "respuesta", {"asunto": (subj or "")[:200]})
@@ -106,7 +137,7 @@ def _revisar_gmail(max_msgs=100):
     last = int(pipeline.kv_get("inbox_last_ts", "0") or 0)
     lst = svc.users().messages().list(userId="me", q="in:inbox newer_than:3d",
                                       maxResults=max_msgs).execute()
-    respondieron = rebotes = revisados = 0
+    respondieron = rebotes = revisados = bajas = 0
     nuevo_max = last
     for m in lst.get("messages", []):
         meta = svc.users().messages().get(
@@ -129,15 +160,17 @@ def _revisar_gmail(max_msgs=100):
             respondieron += 1
         elif r == "rebote":
             rebotes += 1
+        elif r == "baja":
+            bajas += 1
     if nuevo_max > last:
         pipeline.kv_set("inbox_last_ts", nuevo_max)
     return {"ok": True, "backend": "gmail", "revisados": revisados,
-            "respondieron": respondieron, "rebotes": rebotes}
+            "respondieron": respondieron, "rebotes": rebotes, "bajas": bajas}
 
 
 # ── Backend IMAP ──
 def _revisar_imap(max_msgs=80):
-    respondieron = rebotes = revisados = 0
+    respondieron = rebotes = revisados = bajas = 0
     M = imaplib.IMAP4_SSL(config.IMAP_HOST, config.IMAP_PORT)
     M.login(config.IMAP_USER, config.IMAP_PASS)
     M.select("INBOX")
@@ -157,9 +190,11 @@ def _revisar_imap(max_msgs=80):
             respondieron += 1
         elif r == "rebote":
             rebotes += 1
+        elif r == "baja":
+            bajas += 1
     M.logout()
     return {"ok": True, "backend": "imap", "revisados": revisados,
-            "respondieron": respondieron, "rebotes": rebotes}
+            "respondieron": respondieron, "rebotes": rebotes, "bajas": bajas}
 
 
 def revisar(max_msgs=100):
