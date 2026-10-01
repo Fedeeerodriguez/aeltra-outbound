@@ -3,961 +3,474 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Aeltra Outbound</title>
+<title>Aeltra · Monitor Outbound</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-*{box-sizing:border-box}
+/* ── Sistema visual (mismo lenguaje que RRHHIA): papel, tinta, un solo acento.
+   Los tres colores semánticos (apto / alerta / fuera) se reservan para estado;
+   si se usaran de decoración dejarían de significar algo. Solo para ver: es un
+   monitor de lectura, el sistema se maneja desde el chat. ── */
 :root{
-  --cream:#ece9d8; --cream2:#dcd8c3; --ink:#161616;
-  --hi:#ffffff; --lo:#9c9a8e;                 /* biseles */
-  --head:#0b2f4e; --head2:#1c5274;            /* barra de título (navy Aeltra) */
-  --grn:#5cb85c; --grnD:#347a34; --grnL:#9ae59a;
-  --blu:#3a8fd4; --bluD:#1c5274; --bluL:#8fd0ff;
-  --red:#d14141;
-  --cy:#22D3EE; --mo:#7C3AED; --az:#3B82F6; --gr:#34d399;
-  /* oficina Agent-Manager */
-  --wall:#2f6d6b; --wall2:#276160; --wallLn:#1c4a49;
-  --floorA:#24404e; --floorB:#182b36;
-  --cube:#9a9e94; --cubeHi:#b4b8ad; --cubeLo:#767b70; --cubeDk:#565b54;
-  --scr:#07301e; --scrGrn:#3ddb6a;
-  --tagG:#39c05a; --tagY:#e8c33a; --tagR:#d94a3f;
-  --hudBg:#08190f; --hudGrn:#46e57e;
+  color-scheme:light;
+  --papel:#FBFBFA; --superficie:#FFFFFF; --borde:#E8E6E1;
+  --tinta:#16181D; --tinta-suave:#5A6068;
+  --acento:#2C4A7C; --acento-700:#213A64; --acento-50:#EEF2F8;
+  --piedra-50:#F8F7F5; --piedra-100:#F1EFEC; --piedra-200:#E4E1DB;
+  --piedra-300:#D2CEC6; --piedra-400:#A8A39A; --piedra-500:#7C776E;
+  --apto:#1C7A55; --alerta:#B07A1E; --fuera:#B23B32;
+  --sombra-suave:0 1px 2px rgba(22,24,29,.04), 0 8px 24px rgba(22,24,29,.05);
+  --sombra-panel:0 4px 12px rgba(22,24,29,.06), 0 24px 56px rgba(22,24,29,.09);
 }
+*{box-sizing:border-box}
+*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 html,body{height:100%}
-body{margin:0;background:
-  radial-gradient(120% 90% at 50% 0%,#5a86ab,#3f6d92 60%,#31597c);
-  color:var(--ink);font-family:"VT323","Courier New",monospace;font-size:19px}
-img{image-rendering:pixelated}
+body{margin:0;background:var(--papel);color:var(--tinta);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:15px;line-height:1.5;font-feature-settings:"ss01","cv11"}
+h1,h2,h3{letter-spacing:-.03em;font-weight:600;margin:0}
+.tabular{font-variant-numeric:tabular-nums}
+a{color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#DBD8D2;border-radius:10px;border:3px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:#C4C0B8;background-clip:padding-box}
 
-/* ---------- ventana Habbo ---------- */
-.win{background:var(--cream);border:2px solid #000;
-  box-shadow:inset -2px -2px 0 var(--lo),inset 2px 2px 0 var(--hi);padding:3px}
-.win>.head{background:linear-gradient(180deg,var(--head2),var(--head));color:#fff;border:1px solid #000;
-  padding:5px 9px;display:flex;align-items:center;gap:8px;font-size:19px;letter-spacing:.5px}
-.win>.head .x{margin-left:auto;background:var(--red);color:#fff;border:1px solid #000;font-size:12px;
-  padding:1px 6px;box-shadow:inset -1px -1px 0 #802020,inset 1px 1px 0 #ff8080;cursor:pointer}
-.win>.head .dot{width:9px;height:9px;background:var(--gr);border:1px solid #000;animation:blink 1.3s infinite}
-.win>.body{background:#fff;border:1px solid #808080;margin-top:3px;padding:14px}
+/* ── Header fijo translúcido ── */
+header.top{position:sticky;top:0;z-index:30;border-bottom:1px solid var(--borde);
+  background:rgba(251,251,250,.85);backdrop-filter:blur(16px)}
+.top .wrap{max-width:1240px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.logo{width:34px;height:34px;border-radius:10px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--acento),var(--acento-700));color:#fff;font-weight:700;font-size:16px}
+.brand .nm{font-size:16px;font-weight:600;letter-spacing:-.02em}
+.brand .sb{font-size:12px;color:var(--tinta-suave)}
+.spacer{flex:1}
+.live{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--tinta-suave);
+  background:var(--piedra-100);border-radius:999px;padding:5px 11px}
+.live .dot{width:7px;height:7px;border-radius:50%;background:var(--apto);box-shadow:0 0 0 0 rgba(28,122,85,.5);animation:pulso 2s infinite}
+@keyframes pulso{0%{box-shadow:0 0 0 0 rgba(28,122,85,.45)}70%{box-shadow:0 0 0 6px rgba(28,122,85,0)}100%{box-shadow:0 0 0 0 rgba(28,122,85,0)}}
 
-/* botones pixel */
-.b{border:2px solid #000;color:#fff;padding:7px 15px;font-family:inherit;font-size:19px;cursor:pointer;
-  background:var(--grn);text-shadow:1px 1px 0 var(--grnD);
-  box-shadow:inset -2px -2px 0 var(--grnD),inset 2px 2px 0 var(--grnL)}
-.b:active{box-shadow:inset 2px 2px 0 var(--grnD),inset -2px -2px 0 var(--grnL)}
-.b.blue{background:var(--blu);text-shadow:1px 1px 0 var(--bluD);box-shadow:inset -2px -2px 0 var(--bluD),inset 2px 2px 0 var(--bluL)}
-.b.blue:active{box-shadow:inset 2px 2px 0 var(--bluD),inset -2px -2px 0 var(--bluL)}
-.inp{border:2px solid #000;background:#fcfcfc;padding:6px 8px;font-family:inherit;font-size:18px;outline:none;
-  box-shadow:inset 1px 1px 2px #808080;width:100%}
-.badge{display:inline-flex;align-items:center;gap:6px;background:var(--grn);color:#fff;border:2px solid #000;
-  padding:2px 8px;font-size:15px;box-shadow:inset -1px -1px 0 var(--grnD),inset 1px 1px 0 var(--grnL)}
-.badge .d{width:8px;height:8px;background:#fff;border:1px solid #000;animation:blink 1.1s infinite}
+/* ── Tabs tipo píldora ── */
+nav.tabs{max-width:1240px;margin:0 auto;padding:0 24px 14px}
+.tabrow{display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--piedra-100);border-radius:999px;padding:4px}
+.tab{border:0;background:transparent;cursor:pointer;border-radius:999px;padding:7px 16px;
+  font:inherit;font-size:13px;font-weight:500;color:var(--tinta-suave);transition:all .2s;position:relative}
+.tab:hover{color:var(--tinta)}
+.tab.on{background:var(--superficie);color:var(--tinta);box-shadow:0 1px 2px rgba(22,24,29,.08)}
+.tab .cnt{margin-left:7px;font-size:11px;opacity:.55}
+.tab .pip{position:absolute;top:4px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--fuera)}
 
-/* ---------- layout desktop ---------- */
-.desktop{min-height:100%;padding:16px;display:grid;grid-template-columns:214px 1fr;gap:16px;align-items:start}
-.side .logo{width:34px;height:34px;border:2px solid #000;display:grid;place-items:center;
-  background:linear-gradient(135deg,var(--cy),var(--mo));color:#04121f;font-family:"Press Start 2P";font-size:13px}
-.side .brand{font-family:"Press Start 2P";font-size:11px;color:#fff}
-.navitem{display:flex;align-items:center;gap:9px;background:var(--cream);border:2px solid #000;
-  box-shadow:inset -2px -2px 0 var(--lo),inset 2px 2px 0 var(--hi);
-  padding:8px 10px;margin-bottom:7px;font-size:19px;color:#161616;cursor:pointer;user-select:none}
-.navitem .i{width:16px;height:16px;border:2px solid #000;background:#cfd6b8;flex:none}
-.navitem:hover{background:#f3f1e3}
-.navitem.on{background:#cdd1b0;box-shadow:inset 2px 2px 0 var(--lo),inset -2px -2px 0 var(--hi)}
-.side .note{font-size:15px;color:#33475b;margin-top:10px;line-height:1.35;padding:8px;border-top:1px dashed #b7b09a}
-.side .note b{color:var(--bluD)}
+main{max-width:1240px;margin:0 auto;padding:22px 24px 60px}
+.view{display:none;animation:entra .4s cubic-bezier(.16,1,.3,1) both}
+.view.on{display:block}
+@keyframes entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
-.view{display:none}.view.on{display:block}
-.headline{display:flex;align-items:center;gap:10px}
-.headline .t{font-family:"Press Start 2P";font-size:13px;color:#fff;letter-spacing:.5px}
+.vhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:0 0 16px;flex-wrap:wrap}
+.vhead h2{font-size:19px}
+.vhead p{margin:3px 0 0;font-size:13px;color:var(--tinta-suave)}
 
-/* ---------- KPIs ---------- */
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
-.kpi{background:var(--cream);border:2px solid #000;box-shadow:inset -2px -2px 0 var(--lo),inset 2px 2px 0 var(--hi);padding:9px 11px}
-.kpi .k{font-size:14px;color:#4b4b4b;text-transform:uppercase;letter-spacing:1px}
-.kpi .v{font-size:34px;line-height:.9;margin-top:3px;color:#12324e}
-.kpi:first-child .v{color:#0f7a5a}
-.two{display:grid;grid-template-columns:1fr 1.3fr;gap:16px}
-.lbl{font-size:15px;text-transform:uppercase;letter-spacing:1px;color:#555;margin:0 0 8px}
-.htable{width:100%;border-collapse:collapse;font-size:18px}
-.htable th{text-align:left;background:#e9ecd6;border:1px solid #b7b09a;padding:6px 8px;font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:#4b4b4b}
-.htable td{border:1px solid #d9d6c3;padding:6px 8px}
-.tag{border:2px solid #000;padding:1px 7px;font-size:14px;background:#bfe9ff;box-shadow:inset -1px -1px 0 #4a90b8,inset 1px 1px 0 #fff}
+/* ── Tarjetas ── */
+.card{background:var(--superficie);border:1px solid var(--borde);border-radius:22px;padding:20px}
+.card.pad-sm{padding:16px}
+.card-t{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--tinta-suave);margin:0 0 14px}
 
-/* ---------- OFICINA (motor Canvas 2D, estilo pixel-agents) ---------- */
-.roomwrap{overflow-x:auto}
-.room{position:relative;width:1040px;height:600px;margin:0 auto;border:2px solid #000;overflow:hidden;
-  background:#152632;font-family:"VT323","Courier New",monospace}
-#office{display:block;width:1040px;height:600px;image-rendering:pixelated;cursor:pointer}
-.ov{position:absolute;inset:0;pointer-events:none;z-index:3}
+/* ── KPIs ── */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--superficie);border:1px solid var(--borde);border-radius:18px;padding:15px 17px}
+.kpi .k{font-size:12px;color:var(--tinta-suave);font-weight:500}
+.kpi .v{font-size:30px;font-weight:600;letter-spacing:-.03em;margin-top:6px;line-height:1}
+.kpi .sub{font-size:12px;color:var(--tinta-suave);margin-top:5px}
+.kpi.good .v{color:var(--apto)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
-.tag{position:absolute;transform:translateX(-50%);white-space:nowrap;font-family:"Press Start 2P";
-  font-size:8px;line-height:1.5;letter-spacing:.4px;border:2px solid #0a140e;padding:3px 6px;color:#08130b;
-  background:var(--tagG);box-shadow:2px 2px 0 rgba(0,0,0,.4);text-align:center}
-.tag small{display:block;font-size:6px;margin-top:2px;opacity:.9;letter-spacing:0}
-.tag.y{background:var(--tagY)} .tag.r{background:var(--tagR);color:#fff;border-color:#3a0a08;animation:pulseR 1.1s infinite}
+/* ── Chips de estado ── */
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;
+  font-size:12px;font-weight:500;line-height:1.7}
+.chip-apto{background:rgba(28,122,85,.1);color:var(--apto)}
+.chip-alerta{background:rgba(176,122,30,.12);color:var(--alerta)}
+.chip-fuera{background:rgba(178,59,50,.1);color:var(--fuera)}
+.chip-info{background:var(--acento-50);color:var(--acento)}
+.chip-neutro{background:var(--piedra-100);color:var(--tinta-suave)}
 
-.name{position:absolute;transform:translateX(-50%);white-space:nowrap;background:#06232b;border:2px solid #000;
-  padding:2px 8px;box-shadow:2px 2px 0 rgba(0,0,0,.35);font-size:15px;color:var(--cy);
-  text-shadow:0 0 6px rgba(34,211,238,.45);cursor:pointer;pointer-events:auto}
-.name span{color:#8fb0bd;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
-.name.sel{background:#0c3b46;box-shadow:0 0 0 2px #000,0 0 10px rgba(34,211,238,.6)}
+/* ── Tablas ── */
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--tinta-suave);
+  font-weight:600;padding:9px 12px;border-bottom:1px solid var(--borde)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--piedra-100)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr.click{cursor:pointer;transition:background .15s}
+.tbl tr.click:hover{background:var(--piedra-50)}
+.tbl .em{color:var(--tinta-suave);font-size:13px;word-break:break-all}
+.tbl-wrap{overflow-x:auto}
 
-/* ---- burbuja HITL (pedido de permiso) ---- */
-.hitl{position:absolute;transform:translateX(-50%);width:224px;z-index:8;pointer-events:auto;
-  background:#fff;border:3px solid var(--red);padding:7px 9px;font-size:15px;color:#161616;line-height:1.15;
-  box-shadow:3px 3px 0 rgba(0,0,0,.4)}
-.hitl:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--red)}
-.hitl b{color:#12324e}
-.hitl .btns{display:flex;gap:6px;margin-top:7px}
-.hitl .b{font-size:14px;padding:4px 10px}
-.hitl .b.red{background:var(--red);text-shadow:1px 1px 0 #802020;box-shadow:inset -2px -2px 0 #802020,inset 2px 2px 0 #ff9c9c}
+.muted{color:var(--tinta-suave);font-size:13px}
+.empty{padding:44px 16px;text-align:center;color:var(--tinta-suave);font-size:14px}
 
-/* ---- globito de completado (clic → resultado) ---- */
-.donebub{position:absolute;transform:translate(-50%,-100%);width:26px;height:26px;cursor:pointer;pointer-events:auto;
-  border:2px solid #0a140e;display:grid;place-items:center;font-family:"Press Start 2P";font-size:11px;color:#fff;
-  box-shadow:2px 2px 0 rgba(0,0,0,.4);animation:bounce 1s infinite}
-.donebub.ok{background:var(--grn);color:#06210b} .donebub.err{background:var(--red)}
-.donebub:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#0a140e}
-@keyframes bounce{0%,100%{transform:translate(-50%,-100%)}50%{transform:translate(-50%,-124%)}}
-/* ---- pop-up de resultado ---- */
-.respop{position:absolute;left:50%;top:20px;transform:translateX(-50%);width:min(560px,86%);z-index:12;pointer-events:auto;font-size:16px}
-.respop .body{max-height:420px;overflow:auto}
-.respop pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:"VT323",monospace;font-size:18px;line-height:1.35;color:#12324e}
-/* ---- pipeline kanban ---- */
-.pcol{flex:1;min-width:150px;background:#e7ead4;border:2px solid #000;box-shadow:inset -2px -2px 0 var(--lo),inset 2px 2px 0 var(--hi);padding:6px;align-self:flex-start}
-.pcol h4{margin:0 0 6px;font-size:9px;font-family:"Press Start 2P";color:#12324e;text-align:center;padding:5px 2px;border-bottom:2px solid #b7b09a;line-height:1.4}
-.pcol h4 span{color:#0f7a5a}
-.pcard{background:#fff;border:2px solid #000;padding:5px 7px;margin-bottom:6px;font-size:15px}
-.pcard b{color:#12324e}.pcard .em{color:#777;font-size:12px;display:block;word-break:break-all;margin:1px 0 3px}
-.pcard select{width:100%;font-family:inherit;font-size:13px;border:2px solid #000;background:#fcfcfc;padding:2px}
-/* ---- historial en el diálogo ---- */
-.hist{margin-top:8px;border-top:1px dashed #b7b09a;padding-top:6px;max-height:120px;overflow:auto}
-.hist .h{font-size:13px;color:#333;margin:3px 0;line-height:1.25}
-.hist .h b{color:#12324e}.hist .h em{font-style:normal;color:#888;font-size:11px}
-.hist .h.err b{color:#b03730}
+/* ── Alertas ── */
+.alerta-item{display:flex;gap:14px;align-items:flex-start;padding:15px 17px;border-radius:16px;
+  border:1px solid var(--borde);background:var(--superficie);margin-bottom:10px}
+.alerta-item .ico{width:34px;height:34px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:16px}
+.alerta-item.fuera{border-color:rgba(178,59,50,.35)} .alerta-item.fuera .ico{background:rgba(178,59,50,.1);color:var(--fuera)}
+.alerta-item.alerta .ico{background:rgba(176,122,30,.12);color:var(--alerta)}
+.alerta-item.apto .ico{background:rgba(28,122,85,.1);color:var(--apto)}
+.alerta-item .tt{font-weight:600;font-size:14px}
+.alerta-item .dd{font-size:13px;color:var(--tinta-suave);margin-top:2px}
 
-/* ---- ventana de diálogo (abre al click en el avatar) ---- */
-.owin{position:absolute;z-index:9;width:280px;font-size:16px}
-.owin.dialog{left:14px;top:12px}
-.owin .head{font-size:16px;padding:5px 9px}
-.owin .head .nm2{font-weight:bold}
-.owin .body{padding:9px 10px}
-.owin .lines{max-height:132px;overflow:auto}
-.owin .lines.term{background:#06120b;border:1px solid #12351f;color:var(--scrGrn);padding:8px 9px;font-size:16px;line-height:1.4}
-.owin .cur:after{content:"_";animation:blink .9s steps(1) infinite}
-.cl{margin:4px 0;line-height:1.22}
-.cl .who{font-weight:bold}
-.cl.o .who{color:#1064a0}.cl.t .who{color:#0f7a5a}.cl.l .who{color:#8a5a12}.cl.v .who{color:#6b34c4}.cl.me .who{color:#444}
-@keyframes popin{0%{transform:translateY(6px) scale(.97);opacity:0}100%{transform:none;opacity:1}}
-.owin.dialog{animation:popin .14s ease-out}
+/* ── Agentes (reemplaza la "oficina"): lista limpia de actividad ── */
+.ag-row{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--piedra-100)}
+.ag-row:last-child{border-bottom:0}
+.ag-dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--piedra-300)}
+.ag-dot.work{background:var(--apto);animation:pulso 2s infinite}
+.ag-dot.err{background:var(--fuera)} .ag-dot.done{background:var(--acento)}
+.ag-nm{font-weight:600;font-size:14px;min-width:150px}
+.ag-nm em{font-style:normal;font-weight:400;color:var(--tinta-suave);font-size:12px;display:block}
+.ag-msg{flex:1;color:var(--tinta-suave);font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* ---- HUD (tablero + consumo) ---- */
-.hud{position:absolute;z-index:6;background:var(--hudBg);border:2px solid #000;color:var(--hudGrn);
-  box-shadow:3px 3px 0 rgba(0,0,0,.5),inset 0 0 0 1px #0f3a22;padding:8px 11px;font-size:17px;line-height:1.35}
-.hud .ht{font-family:"Press Start 2P";font-size:7px;color:#8fe9ad;letter-spacing:1px;margin-bottom:7px}
-.hud .r2{display:flex;justify-content:space-between;gap:10px}
-.hud b{color:#eafff1}
-.hud.tablero{right:12px;bottom:12px;width:190px}
-.hud.consumo{left:12px;bottom:12px;width:214px}
-.hud.consumo svg{display:block;width:100%;height:40px;margin:4px 0 6px}
-.hud .lo{color:var(--tagG)}
+/* ── Seguimiento (pipeline read-only) ── */
+.cols{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px}
+.col{flex:1;min-width:190px;background:var(--piedra-50);border:1px solid var(--borde);border-radius:16px;padding:12px}
+.col h4{font-size:12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;color:var(--tinta)}
+.col h4 .n{color:var(--tinta-suave);font-weight:500}
+.pcard{background:var(--superficie);border:1px solid var(--borde);border-radius:12px;padding:9px 11px;margin-bottom:8px}
+.pcard b{font-size:13px;font-weight:600}
+.pcard .em{display:block;font-size:11px;color:var(--tinta-suave);word-break:break-all;margin-top:2px}
 
-/* ---------- ficha ---------- */
-.dossier{margin-top:14px}
-.dossier .row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}
-.dossier .face{width:44px;height:44px;border:2px solid #000;display:grid;place-items:center;font-size:22px;background:#eef}
-.dossier .nm{font-size:24px;line-height:1;color:#12324e}
-.dossier .nm em{font-style:normal;font-size:14px;color:#777;text-transform:uppercase;letter-spacing:1px;margin-left:8px}
-.dossier .per{font-size:18px;color:#333;margin-top:4px;line-height:1.25}
-.dossier .task{border:2px solid #000;background:#06202b;color:var(--cy);padding:4px 9px;font-size:17px;white-space:nowrap;box-shadow:inset 0 0 8px rgba(34,211,238,.3)}
-.chatline{display:flex;gap:8px;margin-top:12px}
+/* ── Filtros Analytics ── */
+.filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.inp,select.inp{font:inherit;font-size:14px;border:1px solid var(--borde);background:var(--superficie);
+  border-radius:12px;padding:9px 12px;color:var(--tinta);outline:none;transition:all .2s}
+.inp:focus{border-color:var(--acento);box-shadow:0 0 0 4px rgba(44,74,124,.1)}
+.btn{font:inherit;font-size:13px;font-weight:500;border:0;cursor:pointer;border-radius:999px;
+  padding:9px 18px;background:var(--acento);color:#fff;transition:all .2s}
+.btn:hover{background:var(--acento-700)} .btn:active{transform:scale(.97)}
+canvas{max-width:100%}
 
-@media(max-width:900px){
-  .desktop{grid-template-columns:1fr}
-  .side .list{display:flex;flex-wrap:wrap;gap:7px}.navitem{margin:0;flex:1;min-width:120px;justify-content:center}
-  .kpis{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}
-  .dossier .row{grid-template-columns:1fr}
+/* ── Modal (detalle de campaña) ── */
+.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;
+  background:rgba(22,24,29,.35);backdrop-filter:blur(3px)}
+.modal.on{display:flex;animation:fade .2s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal .box{background:var(--superficie);border-radius:22px;box-shadow:var(--sombra-panel);
+  width:min(620px,100%);max-height:85vh;display:flex;flex-direction:column;animation:pop .22s cubic-bezier(.16,1,.3,1)}
+@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.modal .mh{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--borde)}
+.modal .mh h3{font-size:16px}
+.modal .mx{border:0;background:var(--piedra-100);width:30px;height:30px;border-radius:50%;cursor:pointer;color:var(--tinta-suave);font-size:15px}
+.modal .mx:hover{background:var(--piedra-200)}
+.modal .mb{padding:20px 22px;overflow:auto}
+.modal pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:14px;line-height:1.55}
+
+@media(max-width:820px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .grid2{grid-template-columns:1fr}
 }
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes pulseR{0%,100%{box-shadow:2px 2px 0 rgba(0,0,0,.4),0 0 0 0 rgba(217,74,63,.6)}50%{box-shadow:2px 2px 0 rgba(0,0,0,.4),0 0 0 5px rgba(217,74,63,0)}}
-@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
-@media(prefers-reduced-motion:reduce){.worker,.tag.r,.owin.dialog{animation:none}.badge .d,.win .head .dot,.owin .cur:after{animation:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
 <body>
 
-<div class="desktop">
-  <!-- SIDEBAR (ventana Habbo) -->
-  <aside class="win side">
-    <div class="head"><span class="logo">A</span><span class="brand">AELTRA</span></div>
-    <div class="body" style="padding:10px">
-      <div class="list">
-        <div class="navitem" data-v="panel"><span class="i"></span> Panel</div>
-        <div class="navitem on" data-v="agentes"><span class="i"></span> Agentes</div>
-        <div class="navitem" data-v="dashboard"><span class="i"></span> Dashboard</div>
-        <div class="navitem" data-v="pipeline"><span class="i"></span> Pipeline</div>
-        <div class="navitem" data-v="campanias"><span class="i"></span> Campañas</div>
-        <div class="navitem" data-v="contactos"><span class="i"></span> Contactos</div>
-        <div class="navitem" data-v="rutinas"><span class="i"></span> Rutinas</div>
-      </div>
-      <div class="note" id="side-casilla">Casilla<br><b>contacto@aeltra.company</b><br>Envío SMTP · Zoho</div>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <span class="logo">A</span>
+      <div><div class="nm">Aeltra · Outbound</div><div class="sb">Monitor — solo lectura · se opera desde el chat</div></div>
     </div>
-  </aside>
+    <span class="spacer"></span>
+    <span class="live"><span class="dot"></span><span id="live-txt">en vivo</span></span>
+  </div>
+  <nav class="tabs">
+    <div class="tabrow">
+      <button class="tab on" data-v="resumen">Resumen</button>
+      <button class="tab" data-v="alertas">Alertas <span class="cnt" id="t-alertas"></span></button>
+      <button class="tab" data-v="seguimiento">Seguimiento</button>
+      <button class="tab" data-v="campanias">Campañas</button>
+      <button class="tab" data-v="analytics">Analytics</button>
+    </div>
+  </nav>
+</header>
 
-  <!-- MAIN -->
-  <main>
-    <!-- ===== AGENTES · SALA ===== -->
-    <section class="view on" id="v-agentes">
-      <div class="win">
-        <div class="head"><span class="dot"></span> LA OFICINA — AGENTES <span class="badge" style="margin-left:8px"><span class="d"></span>EN VIVO</span><span class="x">X</span></div>
-        <div class="body" style="padding:8px;background:#cfd3bd">
-          <div class="roomwrap"><div class="room">
-            <div class="wall"><span class="board"></span><span class="clock"></span></div>
-            <div class="sign"><b>AELTRA · OUTBOUND HQ</b></div>
-            <div class="floor"></div>
-
-            <!-- ventana de diálogo (abre al click en el avatar) -->
-            <div class="owin dialog win" id="dialog" hidden>
-              <div class="head"><span class="nm2" id="dlg-hd">Nico</span><span class="x" id="dlg-x">X</span></div>
-              <div class="body">
-                <div class="lines" id="dlg-lines"></div>
-                <div class="chatline" style="margin-top:8px"><input class="inp" id="dlg-in" placeholder="Hablale…"><button class="b" id="dlg-send">Enviar</button></div>
-                <div class="hist" id="dlg-hist"></div>
-              </div>
-            </div>
-
-            <!-- motor Canvas 2D (oficina + personajes animados) -->
-            <canvas id="office" width="1040" height="600"></canvas>
-
-            <!-- capa de overlays: etiquetas de estado, nombres y HITL (posicionados por JS) -->
-            <div class="ov" id="ov">
-              <div class="tag g" id="tag-nico">TRABAJANDO<small>COORDINANDO #12</small></div>
-              <div class="name" data-a="nico" id="name-nico">Nico <span>· CEO</span></div>
-              <div class="tag g" id="tag-lupe">TRABAJANDO<small>BUSCANDO 72%</small></div>
-              <div class="name" data-a="lupe" id="name-lupe">Lupe <span>· Buscador</span></div>
-              <div class="tag y" id="tag-vera">REVISIÓN<small>ESCRIBIENDO</small></div>
-              <div class="name" data-a="vera" id="name-vera">Vera <span>· Copy</span></div>
-              <div class="hitl" id="hitl">Tarea lista. <b>Permiso para enviar 25 emails (~$0.30)</b>
-                <div class="btns"><button class="b" id="ap">Aprobar</button><button class="b red" id="rj">Rechazar</button></div>
-              </div>
-              <div class="tag r" id="tag-tino">ESPERANDO<small>APROBACIÓN</small></div>
-              <div class="name" data-a="tino" id="name-tino">Tino <span>· Envía mails</span></div>
-              <!-- globitos de completado (clic → pop-up de resultado) -->
-              <div class="donebub" data-a="nico" id="done-nico" hidden></div>
-              <div class="donebub" data-a="lupe" id="done-lupe" hidden></div>
-              <div class="donebub" data-a="vera" id="done-vera" hidden></div>
-              <div class="donebub" data-a="tino" id="done-tino" hidden></div>
-              <!-- pop-up de resultado -->
-              <div class="respop win" id="respop" hidden>
-                <div class="head"><span id="respop-hd">Resultado</span><span class="x" id="respop-x">X</span></div>
-                <div class="body"><pre id="respop-body"></pre></div>
-              </div>
-            </div>
-
-            <!-- HUDs -->
-            <div class="hud consumo">
-              <div class="ht">CONSUMO DE API · HOY</div>
-              <svg viewBox="0 0 200 40" preserveAspectRatio="none"><polyline points="0,32 24,28 48,30 72,20 96,24 120,14 144,18 168,10 200,12" fill="none" stroke="#46e57e" stroke-width="2"/></svg>
-              <div class="r2"><span>Prospectos</span><b id="hud-prosp">0</b></div>
-              <div class="r2"><span>Enviados</span><b id="hud-env">0</b></div>
-            </div>
-            <div class="hud tablero">
-              <div class="ht">TABLERO DE CONTROL</div>
-              <div class="r2"><span>Agentes activos</span><b id="hud-act">0</b></div>
-              <div class="r2"><span>Campañas</span><b id="hud-camp">0</b></div>
-              <div class="r2"><span>En cola</span><b id="hud-cola">0</b></div>
-              <div class="r2"><span>Estado</span><b class="lo" id="hud-estado">—</b></div>
-            </div>
-          </div></div>
-        </div>
+<main>
+  <!-- ===== RESUMEN ===== -->
+  <section class="view on" id="v-resumen">
+    <div class="vhead"><div><h2>Resumen</h2><p>Estado general de la máquina de outbound, actualizado solo.</p></div></div>
+    <div class="kpis">
+      <div class="kpi good"><div class="k">Enviados</div><div class="v tabular" id="k-enviados">—</div><div class="sub" id="k-enviados-hoy">hoy —</div></div>
+      <div class="kpi"><div class="k">Respuestas</div><div class="v tabular" id="k-resp">—</div><div class="sub" id="k-tresp">tasa —</div></div>
+      <div class="kpi"><div class="k">En cola</div><div class="v tabular" id="k-cola">—</div><div class="sub">por salir</div></div>
+      <div class="kpi"><div class="k">Rebotes</div><div class="v tabular" id="k-reb">—</div><div class="sub" id="k-tentrega">entrega —</div></div>
+      <div class="kpi"><div class="k">Contactos</div><div class="v tabular" id="k-contactos">—</div><div class="sub" id="k-prosp">— prospectos</div></div>
+      <div class="kpi"><div class="k">Clientes</div><div class="v tabular" id="k-clientes">—</div><div class="sub">cerrados</div></div>
+      <div class="kpi"><div class="k">Bajas</div><div class="v tabular" id="k-sup">—</div><div class="sub">suprimidos</div></div>
+      <div class="kpi"><div class="k">Campañas</div><div class="v tabular" id="k-camp">—</div><div class="sub">totales</div></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-t">Actividad de los agentes</div>
+        <div id="ag-list"><div class="muted">Cargando…</div></div>
       </div>
-
-      <div class="win dossier">
-        <div class="head"><span id="d-hd">Nico — Orquestador</span><span class="x">X</span></div>
-        <div class="body">
-          <div class="row">
-            <div class="face" id="d-face">🎧</div>
-            <div>
-              <div class="nm" id="d-nm">Nico <em id="d-role">Orquestador</em></div>
-              <div class="per" id="d-per"></div>
-              <div class="chatline"><input class="inp" id="d-in" placeholder="Hablale a Nico…"><button class="b">Enviar</button></div>
-            </div>
-            <div class="task" id="d-task">Coordinando la campaña #12</div>
-          </div>
-        </div>
+      <div class="card">
+        <div class="card-t">Alertas recientes</div>
+        <div id="resumen-alertas"><div class="muted">Cargando…</div></div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ===== PANEL ===== -->
-    <section class="view" id="v-panel">
-      <div class="win">
-        <div class="head"><span class="dot"></span> PANEL <span class="badge" style="margin-left:8px"><span class="d"></span>EN VIVO</span><span class="x">X</span></div>
-        <div class="body">
-          <div class="kpis">
-            <div class="kpi"><div class="k">Contactos</div><div class="v" id="k-contactos">0</div></div>
-            <div class="kpi"><div class="k">Enviados</div><div class="v" id="k-enviados">0</div></div>
-            <div class="kpi"><div class="k">En cola</div><div class="v" id="k-cola">0</div></div>
-            <div class="kpi"><div class="k">Respond.</div><div class="v" id="k-resp">0</div></div>
-            <div class="kpi"><div class="k">Prospectos</div><div class="v" id="k-prosp">0</div></div>
-          </div>
-          <div class="two">
-            <div>
-              <p class="lbl">Lanzar campaña</p>
-              <input class="inp" id="camp-obj" value="Buscá 25 ferreterías en Rosario y mandá la propuesta en 3h">
-              <div style="margin-top:10px"><button class="b" id="camp-go">Lanzar campaña</button> <span id="camp-msg" style="font-size:15px;color:#0f7a5a"></span></div>
-            </div>
-            <div>
-              <p class="lbl">Pipeline</p>
-              <table class="htable"><thead><tr><th>Comercio</th><th>Email</th><th>Estado</th></tr></thead>
-              <tbody id="home-pipe"><tr><td colspan="3" style="color:#889">Cargando…</td></tr></tbody></table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+  <!-- ===== ALERTAS ===== -->
+  <section class="view" id="v-alertas">
+    <div class="vhead"><div><h2>Alertas</h2><p>Lo que conviene mirar: entrega, rebotes, cola, configuración y agentes.</p></div></div>
+    <div id="alertas-list"><div class="muted">Cargando…</div></div>
+  </section>
 
-    <section class="view" id="v-campanias"><div class="win"><div class="head">CAMPAÑAS<span class="x">X</span></div><div class="body">
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <input class="inp" id="camp2-obj" placeholder="Ej: buscá 25 empresas constructoras y mandales una propuesta en 3h">
-        <button class="b" id="camp2-go" style="white-space:nowrap">Lanzar campaña</button>
-      </div>
-      <div id="camp2-msg" style="font-size:15px;color:#0f7a5a;margin-bottom:12px"></div>
+  <!-- ===== SEGUIMIENTO ===== -->
+  <section class="view" id="v-seguimiento">
+    <div class="vhead"><div><h2>Seguimiento</h2><p>Dónde está cada contacto en el pipeline. Los “enviado” sin respuesta pasan solos a “no respondió”.</p></div></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-t">Pipeline</div>
+      <div class="cols" id="pipe-cols"><div class="muted">Cargando…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-t">Últimos contactos</div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Empresa</th><th>Email</th><th>Nicho</th><th>Estado</th></tr></thead>
+        <tbody id="list-contactos"><tr><td colspan="4" class="muted">Cargando…</td></tr></tbody></table></div>
+    </div>
+  </section>
 
-      <details id="seq-box" style="border:1px solid #d7dbe3;border-radius:10px;padding:10px 12px;margin-bottom:14px">
-        <summary style="cursor:pointer;font-weight:600;color:#12324e">📧 Secuencia de 3 correos (con follow-ups automáticos)</summary>
-        <p class="lbl" style="margin:8px 0">Manda el paso 1 ahora (paceado). El paso 2 sale a las <b>N horas</b> y el paso 3 a las <b>M horas</b>, <b>solo si el contacto no respondió</b>. Las respuestas se detectan solas y frenan el follow-up.</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <label class="lbl">Nicho<input class="inp" id="seq-nicho" value="empresas constructoras"></label>
-          <label class="lbl">País<input class="inp" id="seq-pais" value="Argentina"></label>
-          <label class="lbl">Cantidad<input class="inp" id="seq-cant" type="number" value="20"></label>
-          <label class="lbl">Ventana paso 1 (horas)<input class="inp" id="seq-ventana" type="number" value="6"></label>
-          <label class="lbl">Paso 2 a las… (horas)<input class="inp" id="seq-d2" type="number" value="24"></label>
-          <label class="lbl">Paso 3 a las… (horas)<input class="inp" id="seq-d3" type="number" value="48"></label>
-        </div>
-        <div class="lbl" style="margin-top:6px"><b>Paso 1 — directo</b></div>
-        <input class="inp" id="seq-a1" value="El tiempo administrativo en {{empresa}}">
-        <textarea class="inp" id="seq-c1" rows="5" style="width:100%;margin-top:4px">{{nombre}}, buenas. Le escribo porque en muchas constructoras el equipo pierde horas en tareas administrativas: armar presupuestos, cargar datos entre planillas, hacer seguimiento a clientes y proveedores, responder las mismas consultas.
+  <!-- ===== CAMPAÑAS ===== -->
+  <section class="view" id="v-campanias">
+    <div class="vhead"><div><h2>Campañas</h2><p>Cómo le fue a cada una. Éxito = respuestas o reuniones agendadas. Tocá una fila para ver el detalle.</p></div></div>
+    <div class="card">
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>#</th><th>Campaña</th><th>Tipo</th><th>Contactados</th><th>Pasos 1/2/3</th><th>Rebotes</th><th>Entrega</th><th>Resp.</th><th>T. resp.</th></tr></thead>
+        <tbody id="db-camps"><tr><td colspan="9" class="muted">Cargando…</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
 
-En Aeltra armamos software y agentes de IA a medida para sacarse ese trabajo repetitivo de encima, sin sumar gente.
+  <!-- ===== ANALYTICS ===== -->
+  <section class="view" id="v-analytics">
+    <div class="vhead"><div><h2>Analytics</h2><p>Filtrá por nicho y fecha para ver la evolución de los envíos.</p></div></div>
+    <div class="filtros">
+      <select id="mx-nicho" class="inp" style="max-width:240px"><option value="">Todos los nichos</option></select>
+      <input type="date" id="mx-desde" class="inp" title="Desde">
+      <input type="date" id="mx-hasta" class="inp" title="Hasta">
+      <button class="btn" id="mx-go">Filtrar</button>
+      <span id="mx-msg" class="muted"></span>
+    </div>
+    <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi"><div class="k">Enviados (filtro)</div><div class="v tabular" id="mx-env">0</div></div>
+      <div class="kpi"><div class="k">Tasa entrega</div><div class="v tabular" id="mx-tent">0%</div></div>
+      <div class="kpi"><div class="k">Respuestas</div><div class="v tabular" id="mx-resp">0</div></div>
+      <div class="kpi"><div class="k">Rebotes</div><div class="v tabular" id="mx-reb">0</div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="card-t">Enviados por día</div><canvas id="mx-chart-dia" height="150"></canvas></div>
+      <div class="card"><div class="card-t">Por nicho — enviados / respuestas / rebotes</div><canvas id="mx-chart-nicho" height="150"></canvas></div>
+    </div>
+  </section>
+</main>
 
-¿Le sirve que le muestre en 15 minutos cómo se vería en {{empresa}}? Si no es para ustedes, me avisa y listo.</textarea>
-        <div class="lbl" style="margin-top:8px"><b>Paso 2 — +24h si no responde</b></div>
-        <input class="inp" id="seq-a2" value="¿Le quedó pendiente, {{nombre}}?">
-        <textarea class="inp" id="seq-c2" rows="5" style="width:100%;margin-top:4px">{{nombre}}, le escribí hace unos días por el tiempo que se va en tareas administrativas en {{empresa}}.
-
-Para ser concreto, lo que más automatizamos en constructoras es el armado de presupuestos, el seguimiento a quienes pidieron una cotización y la carga de datos entre sistemas.
-
-Si le interesa, en 15 minutos le muestro por dónde conviene arrancar. ¿Tiene un rato esta semana?</textarea>
-        <div class="lbl" style="margin-top:8px"><b>Paso 3 — +48h si no responde</b></div>
-        <input class="inp" id="seq-a3" value="¿Cierro por ahora, {{nombre}}?">
-        <textarea class="inp" id="seq-c3" rows="5" style="width:100%;margin-top:4px">{{nombre}}, no quiero llenarle la casilla. Si hoy no es prioridad, lo entiendo perfecto.
-
-Le dejo la puerta abierta: cuando quieran mirar cómo ahorrar tiempo administrativo en {{empresa}}, me responde este mismo correo y coordinamos. Gracias por su tiempo.</textarea>
-        <button class="b" id="seq-go" style="margin-top:10px">🚀 Lanzar secuencia (envío real)</button>
-        <div id="seq-msg" style="font-size:15px;margin-top:8px"></div>
-      </details>
-
-      <div id="list-campanias">Cargando…</div>
-    </div></div></section>
-    <section class="view" id="v-contactos"><div class="win"><div class="head">CONTACTOS<span class="x">X</span></div><div class="body" id="list-contactos">Cargando…</div></div></section>
-    <section class="view" id="v-rutinas"><div class="win"><div class="head">RUTINAS<span class="x">X</span></div><div class="body" id="list-rutinas">Cargando…</div></div></section>
-
-    <!-- ===== DASHBOARD ===== -->
-    <section class="view" id="v-dashboard">
-      <div class="win"><div class="head"><span class="dot"></span> DASHBOARD <span class="x">X</span></div><div class="body">
-        <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(115px,1fr))">
-          <div class="kpi"><div class="k">Contactos</div><div class="v" id="db-contactos">0</div></div>
-          <div class="kpi"><div class="k">Enviados</div><div class="v" id="db-enviados">0</div></div>
-          <div class="kpi"><div class="k">Respuestas/Agendas</div><div class="v" id="db-resp">0</div></div>
-          <div class="kpi"><div class="k">Clientes</div><div class="v" id="db-clientes">0</div></div>
-          <div class="kpi"><div class="k">Tasa entrega</div><div class="v" id="db-tentrega">0%</div></div>
-          <div class="kpi"><div class="k">Tasa respuesta</div><div class="v" id="db-tresp">0%</div></div>
-          <div class="kpi"><div class="k">Rebotes</div><div class="v" id="db-rebotes">0</div></div>
-        </div>
-        <p class="lbl">Cómo le fue a cada campaña (éxito = respuestas/agendas)</p>
-        <div id="db-camps">Cargando…</div>
-
-        <hr style="border:0;border-top:1px solid #d7dbe3;margin:18px 0">
-        <p class="lbl">📊 Analytics — filtrá por nicho y fecha</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
-          <select id="mx-nicho" class="inp" style="max-width:230px"><option value="">Todos los nichos</option></select>
-          <input type="date" id="mx-desde" class="inp" style="max-width:160px" title="Desde">
-          <input type="date" id="mx-hasta" class="inp" style="max-width:160px" title="Hasta">
-          <button class="b" id="mx-go">Filtrar</button>
-          <span id="mx-msg" style="font-size:13px;color:#667"></span>
-        </div>
-        <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));margin-bottom:12px">
-          <div class="kpi"><div class="k">Enviados (filtro)</div><div class="v" id="mx-env">0</div></div>
-          <div class="kpi"><div class="k">Tasa entrega</div><div class="v" id="mx-tent">0%</div></div>
-          <div class="kpi"><div class="k">Respuestas</div><div class="v" id="mx-resp">0</div></div>
-          <div class="kpi"><div class="k">Rebotes</div><div class="v" id="mx-reb">0</div></div>
-        </div>
-        <div style="background:#fff;border:1px solid #d7dbe3;border-radius:10px;padding:12px;margin-bottom:12px">
-          <div class="lbl" style="margin:0 0 6px">Enviados por día</div><canvas id="mx-chart-dia" height="110"></canvas></div>
-        <div style="background:#fff;border:1px solid #d7dbe3;border-radius:10px;padding:12px">
-          <div class="lbl" style="margin:0 0 6px">Por nicho (enviados / respuestas / rebotes)</div><canvas id="mx-chart-nicho" height="110"></canvas></div>
-      </div></div>
-    </section>
-
-    <!-- ===== PIPELINE ===== -->
-    <section class="view" id="v-pipeline">
-      <div class="win"><div class="head"><span class="dot"></span> PIPELINE <span class="badge" style="margin-left:8px"><span class="d"></span>CLIENTES</span><span class="x">X</span></div><div class="body">
-        <p class="hint" style="color:#777;margin:0 0 12px">Estado de cada cliente. Los "enviado" sin respuesta pasan solos a "no respondió" a los 3 días hábiles. Cambiá el estado con los botones de cada tarjeta.</p>
-        <div class="roomwrap"><div id="pipe-cols" style="display:flex;gap:12px;min-width:900px">Cargando…</div></div>
-      </div></div>
-    </section>
-  </main>
+<!-- Modal detalle campaña -->
+<div class="modal" id="modal">
+  <div class="box">
+    <div class="mh"><h3 id="modal-hd">Detalle</h3><button class="mx" id="modal-x">✕</button></div>
+    <div class="mb"><pre id="modal-body"></pre></div>
+  </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-  const navs=[...document.querySelectorAll('.navitem')];
-  navs.forEach(n=>n.addEventListener('click',()=>{
-    navs.forEach(x=>x.classList.toggle('on',x===n));
-    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+n.dataset.v));
-  }));
-  const AG={
-    nico:{e:'🎧',nm:'Nico',role:'CEO / Orquestador',task:'Coordinando la campaña #12',cls:'o',
-      per:'Director de operaciones. Interpreta lo que pedís y reparte el trabajo entre los demás. Cabeza fría, mirada de tablero: decide a quién le toca buscar, escribir o enviar — y replanifica si algo no cierra. Nada se dispara sin que él dé la orden.',
-      chat:[['Vos','me','Buscá 25 ferreterías en Rosario y mandá la propuesta.'],['Nico','o','Recibido. Armo la campaña #12 y reparto tareas.'],['Nico','o','Lupe busca, Vera escribe, y Tino espera mi OK para enviar.']]},
-    lupe:{e:'🔍',nm:'Lupe',role:'Buscador',task:'Buscando ferreterías · 72%',cls:'l',term:true,
-      per:'Cazadora de prospectos. No para hasta encontrar los comercios justos del rubro y la zona. Curiosa e incansable, con ojo de lince para el email válido. Nunca envía nada: solo junta y valida.',
-      chat:['&gt; apify: ferreterías rosario','&gt; scrapeando sitios web…','&gt; validando emails… 18/25','&gt; dedupe ok · guardando en pipeline']},
-    vera:{e:'✍️',nm:'Vera',role:'Copywriter',task:'Escribiendo el copy · en revisión',cls:'v',
-      per:'La pluma de la casa. Juega con las palabras hasta que enganchan: asuntos cortos, dolor primero, un solo CTA. Ocurrente y detallista, odia el spam y las plantillas.',
-      chat:[['Vera','v','Asunto propuesto: “Una idea para {{empresa}}”.'],['Vera','v','Cuerpo: dolor primero, 1 solo CTA a la llamada.'],['Nico','o','Aprobado. Pasáselo a Tino.']]},
-    tino:{e:'📮',nm:'Tino',role:'Envía mails',task:'En espera',cls:'t',
-      per:'El cartero metódico. Envía a tiempo y paceado, cuida la reputación de la casilla y respeta siempre las bajas. Antes de gastar o disparar en lote te pide permiso: freno de mano automático (HITL).',
-      chat:[['Tino','t','Campaña #12 lista: 25 emails, costo ~$0.30.'],['Tino','t','Espero tu OK para disparar (paceado en 3h).']]}
-  };
-  const $=id=>document.getElementById(id);
-  const dialog=$('dialog'), dlgLines=$('dlg-lines'), room=document.querySelector('.room');
-  let current='nico';
+const $=id=>document.getElementById(id);
+const api=async u=>{const r=await fetch(u);if(!r.ok)throw 0;return r.json();};
 
-  /* ============ MOTOR CANVAS 2D (oficina pixel detallada + personajes) ============ */
-  const cv=$('office'), g=cv.getContext('2d');
-  const S=2, VW=520, VH=300;          // resolución virtual (x2 → 1040x600)
-  g.imageSmoothingEnabled=false; g.scale(S,S);
-  const px=(x,y,w,h,c)=>{g.fillStyle=c; g.fillRect(x|0,y|0,Math.ceil(w),Math.ceil(h));};
-  const shade=(c,f)=>{const n=parseInt(c.slice(1),16);let r=n>>16,gg=(n>>8)&255,b=n&255;
-    r=Math.max(0,Math.min(255,r*f|0));gg=Math.max(0,Math.min(255,gg*f|0));b=Math.max(0,Math.min(255,b*f|0));
-    return '#'+((1<<24)+(r<<16)+(gg<<8)+b).toString(16).slice(1);};
-  const OUT='#15110d';
-  const ofill=(x,y,w,h,c)=>{px(x-1,y-1,w+2,h+2,OUT); px(x,y,w,h,c);};   // relleno con contorno
+/* ── Navegación de tabs ── */
+const tabs=[...document.querySelectorAll('.tab')];
+tabs.forEach(t=>t.addEventListener('click',()=>{
+  tabs.forEach(x=>x.classList.toggle('on',x===t));
+  const v=t.dataset.v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
+  if(v==='seguimiento'){loadPipeline();loadContactos();}
+  if(v==='campanias')loadDashboard();
+  if(v==='analytics')loadMetricas();
+  if(v==='alertas')computeAlertas();
+}));
 
-  // puestos: x=centro del escritorio, y=línea del asiento; dir=hacia dónde mira; state=working|typing|waiting
-  // escritorio de cada agente (asiento) + paleta
-  const DESK={
-    nico:{sx:150,sy:172, color:'#3a6fd4', hair:'#2a2f45', skin:'#f0c39a'},
-    lupe:{sx:372,sy:172, color:'#22b6cf', hair:'#5a3b1e', skin:'#e8b48c'},
-    vera:{sx:150,sy:264, color:'#8a56d6', hair:'#5a2144', skin:'#f0c39a'},
-    tino:{sx:372,sy:264, color:'#2fae7a', hair:'#233240', skin:'#e8b48c'}
-  };
-  const ORDER=['nico','lupe','vera','tino'];
-  // runtime: posición, dirección (0=abajo,1=arriba,2=izq,3=der), animación, máquina de estados
-  const POS={};
-  ORDER.forEach(a=>{const d=DESK[a]; POS[a]={x:d.sx,y:d.sy,dir:1,step:0,state:'sit',anim:0,timer:3000+Math.random()*5000,wp:[]};});
-  let roamer=null, tinoState='waiting';
-  const COOLER={x:272,y:132};
+/* ── Mapas de estado ── */
+const PIPE_LABEL={prospecto:'Prospecto',contactado:'Contactado',enviado:'Enviado',respondio:'Respondió',
+  no_respondio:'No respondió',seguimiento:'En seguimiento',reunion:'Reunión',cerrado:'Cliente',perdido:'Perdido',rebote:'Rebote'};
+const ESTADO_CHIP={prospecto:'neutro',contactado:'info',enviado:'info',respondio:'apto',reunion:'apto',
+  cerrado:'apto',seguimiento:'alerta',no_respondio:'alerta',perdido:'fuera',rebote:'fuera'};
+const chip=(est)=>`<span class="chip chip-${ESTADO_CHIP[est]||'neutro'}">${PIPE_LABEL[est]||est||'—'}</span>`;
+const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
-  function drawPlant(x,y){
-    px(x+1,y+6,8,7,'#8a5a3a'); px(x+1,y+6,8,2,'#a06c46');          // maceta
-    px(x+2,y-4,2,10,'#2f7a4f'); px(x,y-1,3,6,'#37925e'); px(x+6,y-2,3,7,'#37925e');
-    px(x+3,y-8,3,7,'#3fa568'); px(x-1,y-4,2,5,'#2f7a4f'); px(x+8,y-4,2,5,'#2f7a4f');
-  }
-  function drawCooler(x,y){
-    px(x,y-16,3,4,'#bfe3f2'); px(x-1,y-12,5,3,'#bfe3f2');          // botellón
-    px(x-3,y-9,9,20,'#e8ecef'); px(x-3,y-9,9,2,'#cfd6da');
-    px(x-2,y-3,7,3,'#7fb0c9'); px(x-1,y+2,2,2,'#3a4046'); px(x+3,y+2,2,2,'#3a4046');
-  }
-  function drawCabinet(x,y){
-    px(x,y,26,42,'#8f948c'); px(x,y,26,2,'#a9ada3'); px(x+24,y,2,42,'#767b70');
-    px(x+3,y+5,20,9,'#7a7f77'); px(x+3,y+18,20,9,'#7a7f77'); px(x+3,y+31,20,8,'#7a7f77');
-    px(x+10,y+8,6,2,'#565b54'); px(x+10,y+21,6,2,'#565b54'); px(x+10,y+33,6,2,'#565b54');
-  }
-  function drawCat(t){
-    const span=340, per=(t/45)%(span*2); const x=(per<span?90+per:90+span-(per-span))|0, dir=per<span?1:-1, y=290;
-    const st=Math.floor(t/170)%2;
-    g.save(); g.translate(x,y); if(dir<0)g.scale(-1,1);
-    px(-7,-5,13,5,'#3a3f48'); px(4,-8,5,5,'#3a3f48');            // cuerpo + cabeza
-    px(4,-10,2,2,'#3a3f48'); px(7,-10,2,2,'#3a3f48');            // orejas
-    px(7,-6,1,1,'#3ddb6a');                                       // ojo
-    px(-8,-9,2,5,'#3a3f48');                                      // cola
-    px(-4,0,2,2+st,'#2a2f38'); px(2,0,2,2+(1-st),'#2a2f38');      // patas
-    g.restore();
-  }
-  function drawRobot(t){
-    const span=320, per=(t/34)%(span*2); const x=(per<span?120+per:120+span-(per-span))|0, dir=per<span?1:-1, y=126;
-    const st=Math.floor(t/150)%2, bob=Math.floor(t/300)%2?-1:0;
-    g.save(); g.translate(x,y+bob); if(dir<0)g.scale(-1,1);
-    px(-9,4,19,4,'rgba(0,0,0,.28)');                             // sombra
-    px(-5,-2,4,6+(st?1:0),'#3a4652'); px(2,-2,4,6+(st?0:1),'#3a4652'); // patas
-    px(-6,4,5,2,'#20242c'); px(2,4,5,2,'#20242c');               // pies
-    px(-8,-16,17,15,'#c9ccc4'); px(-8,-16,17,2,'#e2e4dc'); px(-8,-3,17,2,'#a9ada3'); // cuerpo
-    px(-6,-13,13,8,'#0e2233');                                    // cara-pantalla
-    px(-3,-11,2,2,'#3ddb6a'); px(2,-11,2,2,'#3ddb6a'); px(-2,-8,5,1,'#3ddb6a'); // ojos + boca
-    px(0,-20,1,4,'#7a7f77'); px(-1,-23,3,3,(Math.floor(t/300)%2)?'#d94a3f':'#5a1f1c'); // antena
-    px(9,-8,8,6,'#fff'); px(9,-8,8,1,'#d94a3f'); px(9,-8,4,4,'#d94a3f'); // sobre que reparte
-    g.restore();
-  }
-
-  // escritorio en vista cenital: silla al sur, mesa+monitor al norte (el agente mira arriba)
-  function drawDeskAt(sx,sy,t){
-    // silla (sur, donde se sienta)
-    px(sx-7,sy-2,14,11,'#2b3242'); px(sx-7,sy-2,14,2,'#3a4658'); px(sx-7,sy+7,14,2,'#1c2230');
-    // mesa (norte)
-    ofill(sx-22,sy-34,44,16,'#6f5636'); px(sx-22,sy-34,44,2,'#87673f'); px(sx-22,sy-20,44,2,'#4a3a22');
-    // monitor de espaldas + resplandor verde "trabajando" hacia el agente
-    ofill(sx-9,sy-42,18,9,'#12161b'); px(sx-8,sy-41,16,2,'#2a2f38');
-    const fl=(Math.floor(t/240)%2)?'#2f7a4f':'#276a45'; px(sx-8,sy-33,16,2,fl);
-    // teclado + mouse + taza
-    px(sx-9,sy-28,18,4,'#20242c'); for(let k=-7;k<9;k+=2) px(sx+k,sy-27,1,2,'#3a404a');
-    px(sx+11,sy-28,4,3,'#20242c'); px(sx-17,sy-28,4,4,'#d94a3f');
-  }
-
-  function drawOffice(t){
-    // pared superior
-    px(0,0,VW,44,'#2f6d6b'); for(let x=0;x<VW;x+=26) px(x,0,1,44,'#276160'); px(0,41,VW,3,'#1c4a49');
-    // ventana + pizarra + reloj + cartel
-    px(360,8,92,26,'#bfe3f2'); px(360,8,92,2,'#8fbccf'); px(372,16,20,5,'#eaf5fb');
-    px(358,6,96,2,'#5f4a30'); px(358,34,96,2,'#5f4a30'); px(404,8,2,26,'#5f4a30');
-    px(20,8,72,28,'#eef0dd'); px(20,8,72,2,'#cfc9ad'); px(26,15,54,2,'#9fb6c9'); px(26,21,40,2,'#d94a3f'); px(26,27,48,2,'#9fb6c9');
-    px(474,10,16,16,'#e9ecd6'); px(481,10,1,7,'#14322f'); px(481,17,5,1,'#14322f'); px(474,12,1,12,'#14322f'); px(489,12,1,12,'#14322f');
-    g.font='9px "Press Start 2P"'; g.textAlign='center'; g.textBaseline='middle'; g.fillStyle='#22D3EE'; g.fillText('AELTRA',200,25);
-    // piso baldosas (cenital)
-    px(0,44,VW,VH-44,'#243b32');
-    for(let y=44;y<VH;y+=20) for(let x=0;x<VW;x+=20){
-      const dk=((x/20|0)+(y/20|0))%2===0; px(x,y,20,20, dk?'#26403a':'#213933');
-      px(x,y,20,1,'rgba(255,255,255,.025)'); px(x,y,1,20,'rgba(255,255,255,.025)');
+/* ── Agentes (reemplaza la oficina pixel): actividad limpia ── */
+const AG_NM={orquestador:['Nico','Orquestador'],busqueda:['Lupe','Buscador'],
+  copywriter:['Vera','Copywriter'],ejecutor:['Tino','Envíos']};
+async function loadAgentes(){
+  try{
+    const d=await api('/api/agentes'); const box=$('ag-list'); const rows=[];
+    for(const bk of ['orquestador','busqueda','copywriter','ejecutor']){
+      const s=d[bk]||{}; const est=s.estado||'idle';
+      const cls=est==='trabajando'?'work':est==='error'?'err':est==='listo'?'done':'';
+      const [nm,rol]=AG_NM[bk]||[bk,''];
+      const msg=(s.mensaje||(est==='idle'?'En espera':est))+(s.progreso!=null?' · '+s.progreso+'%':'');
+      rows.push(`<div class="ag-row"><span class="ag-dot ${cls}"></span>
+        <div class="ag-nm">${nm}<em>${rol}</em></div><div class="ag-msg">${esc(msg)}</div></div>`);
     }
-    // alfombra central
-    px(96,120,328,150,'#2b5154'); px(98,122,324,146,'#264a4d'); px(96,120,328,2,'#37676b'); px(96,268,328,2,'#1e3a3d');
-    // muebles
-    drawCabinet(10,54); drawCooler(272,118); drawPlant(24,86); drawPlant(486,86); drawPlant(24,286); drawPlant(486,286);
-    // escritorios (debajo de los personajes)
-    ORDER.forEach(a=>drawDeskAt(DESK[a].sx,DESK[a].sy,t));
-    // gato
-    drawCat(t);
-  }
+    box.innerHTML=rows.join('');
+  }catch(e){ $('ag-list').innerHTML='<div class="muted">Sin conexión con el backend.</div>'; }
+}
 
-  // personaje cenital original (chibi ~14x22) con 4 direcciones y caminata
-  function drawChar(a,t){
-    const p=POS[a], d=DESK[a];
-    const sh=d.color, shD=shade(sh,.72), shL=shade(sh,1.18), hr=d.hair, hrD=shade(hr,.62), hrL=shade(hr,1.3), sk=d.skin, skD=shade(sk,.84), pants='#2b3242';
-    const moving=p.state==='walk', step=moving?p.step:0;
-    let dir=p.dir; const flip=(dir===3);
-    const D=(dir===3)?2:dir;
-    g.save(); g.translate(Math.round(p.x), Math.round(p.y)); if(flip) g.scale(-1,1);
-    // sombra
-    px(-6,-1,13,3,'rgba(0,0,0,.26)');
-    // piernas (animadas)
-    const lA=step===1?1:0, lB=step===2?1:0;
-    px(-4,-6,3,6-lA,pants); px(1,-6,3,6-lB,pants); px(-4,-1,3,1,OUT); px(1,-1,3,1,OUT);
-    // cuerpo
-    ofill(-5,-14,10,9,sh); px(-5,-14,10,2,shL); px(-5,-7,10,1,shD);
-    px(-7,-13,2,7,shD); px(5,-13,2,7,shD);                       // brazos
-    // cabeza (contorno) + pelo superior
-    ofill(-6,-25,12,12,sk); px(-7,-27,14,4,hr); px(-7,-27,14,2,hrL);
-    if(D===0){                                                    // mira ABAJO (frente)
-      px(-7,-25,2,9,hr); px(5,-25,2,9,hr);
-      px(-4,-19,2,2,'#10131c'); px(2,-19,2,2,'#10131c');          // ojos
-      px(-4,-20,2,1,hrD); px(2,-20,2,1,hrD);                      // cejas
-      px(-1,-15,2,1,'#a85c4c');                                   // boca
-    } else if(D===1){                                             // mira ARRIBA (nuca)
-      px(-7,-25,14,11,hr); px(-7,-25,14,2,hrL); px(-2,-15,4,2,skD);
-    } else {                                                      // perfil (izq; der se espeja)
-      px(3,-25,3,11,hr); px(-7,-25,2,10,hr);
-      px(-4,-19,2,2,'#10131c'); px(-6,-16,2,1,skD);               // ojo + naricita
-      px(-1,-15,2,1,'#a85c4c');
-    }
-    // props por rol
-    if(a==='nico'){ px(-7,-28,14,2,'#141414'); if(D!==1){ px(-8,-22,2,5,'#141414'); px(6,-22,2,5,'#141414'); } } // vincha + auriculares
-    if(a==='lupe'){ px(-2,-15,3,9,hr); px(-2,-15,3,2,hrL); }                        // coleta que cuelga
-    if(a==='vera' && D===0){ px(-5,-20,4,3,'#dfe7ef'); px(1,-20,4,3,'#dfe7ef'); px(-1,-19,2,1,'#141414'); } // anteojos
-    if(a==='tino'){ px(-7,-28,14,3,'#223040'); px(-7,-28,14,1,'#33506a'); if(D===0) px(-6,-25,12,2,'#2b3a4a'); } // gorra
-    g.restore();
-  }
+/* ── KPIs de resumen (stats + health + dashboard) ── */
+let _dash=null,_stats=null,_health=null,_agentes=null;
+async function refresh(){
+  try{ _stats=await api('/api/stats'); }catch(e){}
+  try{ _health=await api('/api/health'); }catch(e){}
+  try{ _dash=await api('/api/dashboard'); }catch(e){}
+  try{ _agentes=await api('/api/agentes'); }catch(e){}
+  const s=_stats||{}, h=_health||{}, m=_dash||{};
+  const set=(id,v)=>{const e=$(id);if(e)e.textContent=(v==null?'0':v);};
+  set('k-enviados',s.enviados); set('k-resp',s.respondieron); set('k-cola',s.en_cola);
+  set('k-reb',m.rebotes); set('k-contactos',s.contactos); set('k-clientes',s.clientes);
+  set('k-sup',s.supresion); set('k-camp',s.campanias);
+  $('k-enviados-hoy').textContent='hoy '+(h.enviados_hoy!=null?h.enviados_hoy:'—')+(h.daily_cap?' / '+h.daily_cap:'');
+  $('k-tresp').textContent='tasa '+(m.tasa_respuesta!=null?m.tasa_respuesta+'%':'—');
+  $('k-tentrega').textContent='entrega '+(m.tasa_entrega!=null?m.tasa_entrega+'%':'—');
+  $('k-prosp').textContent=(s.prospectos!=null?s.prospectos:'—')+' prospectos';
+  loadAgentes();
+  computeAlertas();
+  $('live-txt').textContent='actualizado '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+}
 
-  // máquina de movimiento: sentados trabajando; de a uno se levantan al dispenser y vuelven
-  function moveAll(dt){
-    for(const a of ORDER){ const p=POS[a], d=DESK[a];
-      if(p.state==='sit'){
-        if(a==='tino' && tinoState==='waiting') continue;
-        p.timer-=dt;
-        if(p.timer<=0){
-          if(roamer===null && a!=='tino'){ roamer=a; p.state='walk';
-            p.wp=[{x:COOLER.x,y:d.sy},{x:COOLER.x,y:COOLER.y,act:'pause'},{x:COOLER.x,y:d.sy},{x:d.sx,y:d.sy,act:'sit'}]; }
-          else p.timer=5000+Math.random()*6000;
-        }
-        continue;
-      }
-      if(p.state==='pause'){ p.timer-=dt; if(p.timer<=0) p.state='walk'; continue; }
-      if(p.state==='walk'){ const tgt=p.wp[0];
-        if(!tgt){ p.state='sit'; p.dir=1; if(roamer===a)roamer=null; p.timer=7000+Math.random()*7000; continue; }
-        const dx=tgt.x-p.x, dy=tgt.y-p.y, dist=Math.hypot(dx,dy);
-        if(dist<1.4){ p.x=tgt.x; p.y=tgt.y;
-          if(tgt.act==='pause'){ p.state='pause'; p.timer=1200; p.dir=1; }
-          else if(tgt.act==='sit'){ p.state='sit'; p.dir=1; p.step=0; p.timer=8000+Math.random()*7000; if(roamer===a)roamer=null; }
-          p.wp.shift(); continue;
-        }
-        const sp=Math.min(dist,0.9*dt/16); p.x+=dx/dist*sp; p.y+=dy/dist*sp;
-        p.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?2:3):(dy<0?1:0);
-        p.anim+=dt; p.step=Math.floor(p.anim/130)%2?1:2;
-      }
-    }
-  }
+/* ── Alertas: se calculan de stats + health + dashboard + agentes ── */
+function computeAlertas(){
+  const s=_stats||{}, h=_health||{}, m=_dash||{}, ag=_agentes||{};
+  const A=[];
+  const push=(sev,ico,tt,dd)=>A.push({sev,ico,tt,dd});
 
-  let T0=performance.now(), last=T0;
-  function frame(now){
-    const t=now-T0, dt=Math.min(50, now-last); last=now;
-    moveAll(dt);
-    g.clearRect(0,0,VW,VH);
-    drawOffice(t);
-    drawRobot(t);
-    // personajes ordenados por Y (profundidad)
-    ORDER.slice().sort((a,b)=>POS[a].y-POS[b].y).forEach(a=>drawChar(a,t));
-    // burbuja "!" sobre Tino cuando espera aprobación
-    if(tinoState==='waiting'){ const d=DESK.tino, yy=d.sy-40+ (Math.floor(t/400)%2?-1:0);
-      px(d.sx-8,yy-9,16,15,'#d94a3f'); px(d.sx-7,yy-8,14,12,'#fff'); px(d.sx-3,yy+4,4,3,'#fff'); px(d.sx-2,yy+7,3,2,'#d94a3f');
-      g.font='9px "Press Start 2P"'; g.textAlign='center'; g.textBaseline='middle';
-      g.fillStyle='#d94a3f'; g.fillText('!',d.sx,yy-1); }
-    requestAnimationFrame(frame);
-  }
-  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(()=>{T0=last=performance.now();requestAnimationFrame(frame);});}
-  else requestAnimationFrame(frame);
+  if(h.sender_ready===false) push('fuera','✉','Envío no configurado','El backend no puede mandar correos (SMTP/credenciales). Nada va a salir hasta resolverlo.');
+  if(h.unsub_ok===false) push('fuera','↩','Link de baja mal configurado','UNSUB_BASE no apunta a un dominio público. El pie de “darse de baja” no funciona.');
+  if(h.reply_read===false) push('alerta','👁','No se leen respuestas','No hay backend de lectura (Gmail/IMAP). No se detectan respuestas, bajas ni rebotes.');
 
-  /* ============ OVERLAYS (etiquetas de estado + nombres, posicionados sobre el canvas) ============ */
-  function place(el,vx,vy,anchorBottom){
-    el.style.left=(vx*S)+'px';
-    el.style.top=(vy*S)+'px';
-    if(anchorBottom) el.style.transform='translate(-50%,-100%)';
-  }
-  function layoutOverlays(){
-    for(const a of ORDER){
-      const d=DESK[a];
-      place($('tag-'+a), d.sx, d.sy-30, true);       // etiqueta sobre la cabeza
-      const nm=$('name-'+a); nm.style.left=(d.sx*S)+'px'; nm.style.top=((d.sy+12)*S)+'px';
-    }
-    // HITL arriba de Tino (por encima de la etiqueta)
-    const w=DESK.tino; $('hitl').style.left=(w.sx*S)+'px'; $('hitl').style.top=((w.sy-46)*S)+'px';
-    $('hitl').style.transform='translate(-50%,-100%)';
-  }
-  layoutOverlays();
+  const te=m.tasa_entrega;
+  if(te!=null && te<85) push('fuera','📉','Entrega baja ('+te+'%)','Muchos correos no llegan. Suele ser por emails basura scrapeados — conviene validar antes de enviar.');
+  else if(te!=null && te<95) push('alerta','📉','Entrega por debajo de lo ideal ('+te+'%)','Vigilar la calidad de las direcciones.');
 
-  /* ============ DIÁLOGO (abre al click en el avatar) ============ */
-  function renderLines(a){
-    const d=AG[a];
-    if(d.term){dlgLines.className='lines term'; dlgLines.innerHTML=d.chat.join('<br>')+'<span class="cur"></span>';}
-    else{dlgLines.className='lines'; dlgLines.innerHTML=d.chat.map(l=>`<div class="cl ${l[1]}"><span class="who">${l[0]}:</span> ${l[2]}</div>`).join('');}
-    dlgLines.scrollTop=dlgLines.scrollHeight;
-  }
-  function placeDialog(a){
-    const d=DESK[a]; let x=d.sx*S-140, y=(d.sy-46)*S-150;
-    x=Math.max(8,Math.min(x,1040-296)); y=Math.max(8,y);
-    dialog.style.left=x+'px'; dialog.style.top=y+'px';
-  }
-  function openDialog(a){
-    current=a; const d=AG[a];
-    $('dlg-hd').textContent=d.nm+' — '+d.role; renderLines(a);
-    $('dlg-in').placeholder='Hablale a '+d.nm+'…';
-    placeDialog(a); dialog.hidden=false;
-    dialog.style.animation='none'; void dialog.offsetWidth; dialog.style.animation='';
-    loadHist(a);
-  }
-  function markSel(a){ ORDER.forEach(x=>$('name-'+x).classList.toggle('sel',x===a)); }
-  function pick(a,open=true){
-    const d=AG[a]; current=a; markSel(open?a:null);
-    $('d-hd').textContent=d.nm+' — '+d.role; $('d-face').textContent=d.e;
-    $('d-nm').innerHTML=d.nm+' <em>'+d.role+'</em>'; $('d-per').textContent=d.per;
-    $('d-task').textContent=d.task; $('d-in').placeholder='Hablale a '+d.nm+'…';
-    if(open)openDialog(a);
-  }
-  // click en el canvas → hit-test del personaje
-  function hit(mx,my){                                   // mx,my en coords virtuales
-    let found=null, best=1e9;
-    for(const a of ORDER){ const p=POS[a], d=DESK[a];
-      const inChar = mx>p.x-9 && mx<p.x+9 && my>p.y-27 && my<p.y+3;
-      const inDesk = mx>d.sx-24 && mx<d.sx+24 && my>d.sy-46 && my<d.sy+6;   // clic en el escritorio también
-      if(inChar||inDesk){ const cx=inChar?p.x:d.sx, cy=inChar?p.y:d.sy;
-        const dd=Math.abs(mx-cx)+Math.abs(my-cy); if(dd<best){best=dd;found=a;} } }
-    return found;
-  }
-  cv.addEventListener('click',e=>{
-    const r=cv.getBoundingClientRect();
-    const mx=(e.clientX-r.left)/(r.width/VW), my=(e.clientY-r.top)/(r.height/VH);
-    const a=hit(mx,my); if(a) pick(a);
-  });
-  ORDER.forEach(a=>$('name-'+a).addEventListener('click',()=>pick(a)));
-  $('dlg-x').addEventListener('click',()=>{dialog.hidden=true; markSel(null);});
-  function sendMsg(){
-    const v=$('dlg-in').value.trim(); if(!v)return;
-    const d=AG[current];
-    if(d.term){d.chat.push('&gt; '+v);}else{d.chat.push(['Vos','me',v]);}
-    $('dlg-in').value=''; renderLines(current);
-  }
-  $('dlg-send').addEventListener('click',()=>sendMsg());
-  $('dlg-in').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
-  pick('nico',false);
+  const reb=m.rebotes, env=m.enviados||s.enviados||0;
+  if(reb!=null && env>0){ const r=reb/env;
+    if(r>0.1) push('fuera','⚠','Rebotes altos ('+reb+')','Más del 10% de los envíos rebota. Protegé el dominio validando direcciones.');
+    else if(r>0.05) push('alerta','⚠','Rebotes a vigilar ('+reb+')','Entre 5% y 10% de rebotes.'); }
 
-  /* ============ HITL: Aprobar / Rechazar el disparo ============ */
-  const tag=$('tag-tino');
-  $('ap')?.addEventListener('click',e=>{e.stopPropagation();
-    $('hitl').style.display='none'; tag.className='tag g'; tag.innerHTML='ENVIANDO<small>5/25 · PACEADO</small>';
-    tinoState='sending'; POS.tino.timer=6000; AG.tino.task='Enviando 5/25 · paceado';
-    AG.tino.chat.push(['Tino','t','¡Aprobado! Disparando 5/25… paceado. 📮']);
-    if(current==='tino'&&!dialog.hidden)renderLines('tino');});
-  $('rj')?.addEventListener('click',e=>{e.stopPropagation();
-    $('hitl').style.display='none'; tag.className='tag y'; tag.innerHTML='EN PAUSA<small>RECHAZADO</small>';
-    tinoState='paused'; POS.tino.timer=6000; AG.tino.task='En pausa · disparo rechazado';
-    AG.tino.chat.push(['Tino','t','Ok, freno el envío. Quedo en pausa.']);
-    if(current==='tino'&&!dialog.hidden)renderLines('tino');});
+  if(s.en_cola>0 && h.enviados_hoy===0 && h.sender_ready!==false)
+    push('alerta','⏳','Hay '+s.en_cola+' en cola y hoy no salió ninguno','Revisar que el worker de envío esté corriendo.');
+  if(h.enviados_hoy!=null && h.daily_cap && h.enviados_hoy>=h.daily_cap)
+    push('apto','✓','Tope diario alcanzado ('+h.enviados_hoy+'/'+h.daily_cap+')','Hoy ya se envió el máximo configurado. Sigue mañana.');
 
-  /* ============ CABLEADO EN VIVO (backend real, mismo origen) ============ */
-  const MAP={nico:'orquestador',lupe:'busqueda',vera:'copywriter',tino:'ejecutor'};
-  const REV={orquestador:'nico',busqueda:'lupe',copywriter:'vera',ejecutor:'tino'};
-  // en modo real no arranca con la burbuja de aprobación de demo
-  tinoState='idle'; const _hitl=$('hitl'); if(_hitl) _hitl.style.display='none';
+  for(const bk in ag){ const st=(ag[bk]||{}).estado;
+    if(st==='error'){ const nm=(AG_NM[bk]||[bk])[0]; push('fuera','🤖','Agente '+nm+' con error',(ag[bk].mensaje||'Revisar el historial del agente.')); } }
 
-  function labelFor(est){ return est==='trabajando'?'TRABAJANDO': est==='error'?'ERROR': est==='listo'?'LISTO':'EN ESPERA'; }
-  function clsFor(est){ return est==='error'?'r': est==='listo'?'g': est==='trabajando'?'g':'g'; }
+  if(s.fallidos>0) push('alerta','✗',s.fallidos+' envíos fallidos','Quedaron envíos en estado “failed”.');
 
-  async function refreshAgents(){
-    try{
-      const d=await (await fetch('/api/agentes')).json(); let activos=0;
-      for(const bk in d){ const a=REV[bk]; if(!a) continue; const s=d[bk]||{};
-        const est=s.estado||'idle', msg=s.mensaje||'', prog=s.progreso;
-        if(est==='trabajando') activos++;
-        const tg=$('tag-'+a);
-        if(tg){ const sub=(prog!=null? prog+'%' : (msg||'').slice(0,18)) || '—';
-          tg.className='tag '+clsFor(est); tg.innerHTML=labelFor(est)+'<small>'+sub+'</small>'; }
-        if(AG[a]){ AG[a].task = (msg||'En espera') + (prog!=null? ' · '+prog+'%':'');
-          if(current===a && !dialog.hidden) $('d-task').textContent=AG[a].task; }
-      }
-      const ea=$('hud-act'); if(ea) ea.textContent=activos;
-      refreshDone(d);   // reusa el MISMO fetch (antes refreshDone pegaba solo cada 2s)
-    }catch(e){}
-  }
-  async function refreshStats(){
-    try{
-      const s=await (await fetch('/api/stats')).json();
-      const set=(id,v)=>{const el=$(id); if(el) el.textContent=(v==null?0:v);};
-      set('k-contactos',s.contactos); set('k-enviados',s.enviados); set('k-cola',s.en_cola);
-      set('k-resp',s.respondieron); set('k-prosp',s.prospectos);
-      set('hud-prosp',s.prospectos); set('hud-env',s.enviados); set('hud-camp',s.campanias); set('hud-cola',s.en_cola);
-      const es=$('hud-estado'); if(es) es.textContent='OPERATIVO';
-    }catch(e){}
-  }
-  // Poll suave (antes 2s/3s → saturaba con ~115 req/20s a /api/agentes).
-  setInterval(refreshAgents,6000); setInterval(refreshStats,8000);
-  refreshAgents(); refreshStats();
+  if(!A.length) push('apto','✓','Todo en orden','Sin alertas: envío configurado, entrega sana y agentes estables.');
 
-  // Panel de inicio: mini-pipeline con datos REALES (antes eran filas fijas de ejemplo).
-  async function refreshHomePipe(){ try{
-    const el=$('home-pipe'); if(!el) return;
-    const d=await (await fetch('/api/pipeline')).json();
-    const rows=(d.contactos||[]).slice(0,6);
-    el.innerHTML = rows.length
-      ? rows.map(c=>`<tr><td>${c.empresa||c.nombre||'—'}</td><td>${c.email||''}</td>`+
-          `<td><span class="tag">${PIPE_LABEL[c.estado]||c.estado||''}</span></td></tr>`).join('')
-      : '<tr><td colspan="3" style="color:#889">Sin contactos todavía</td></tr>';
-  }catch(e){} }
-  setInterval(refreshHomePipe,15000); refreshHomePipe();
+  // Pintar lista completa
+  $('alertas-list').innerHTML=A.map(a=>
+    `<div class="alerta-item ${a.sev}"><div class="ico">${a.ico}</div>
+      <div><div class="tt">${esc(a.tt)}</div><div class="dd">${esc(a.dd)}</div></div></div>`).join('');
+  // Resumen (primeras 3)
+  $('resumen-alertas').innerHTML=A.slice(0,3).map(a=>
+    `<div class="alerta-item ${a.sev}" style="margin-bottom:8px"><div class="ico">${a.ico}</div>
+      <div><div class="tt">${esc(a.tt)}</div><div class="dd">${esc(a.dd)}</div></div></div>`).join('');
+  // Badge en el tab (solo cuenta fuera/alerta)
+  const n=A.filter(a=>a.sev!=='apto').length;
+  $('t-alertas').textContent=n?('· '+n):'';
+  const tabA=document.querySelector('.tab[data-v="alertas"]');
+  let pip=tabA.querySelector('.pip'); const hay=A.some(a=>a.sev==='fuera');
+  if(hay && !pip){ pip=document.createElement('span'); pip.className='pip'; tabA.appendChild(pip); }
+  if(!hay && pip) pip.remove();
+}
 
-  // agentes .md de Claude Code (corren con tu Claude Max, SIN tokens de API)
-  const CLAUDE={nico:'aeltra-orquestador',lupe:'aeltra-buscador',vera:'aeltra-copywriter',tino:'aeltra-ejecutor'};
+/* ── Seguimiento: pipeline (read-only) ── */
+async function loadPipeline(){ try{
+  const d=await api('/api/pipeline'); const cols=$('pipe-cols');
+  const estados=d.estados||[]; const by={}; estados.forEach(e=>by[e]=[]);
+  (d.contactos||[]).forEach(c=>{ (by[c.estado]||(by[c.estado]=[])).push(c); });
+  cols.innerHTML=estados.map(e=>{ const it=by[e]||[];
+    return `<div class="col"><h4>${PIPE_LABEL[e]||e}<span class="n">${it.length}</span></h4>`+
+      (it.length?it.slice(0,40).map(c=>`<div class="pcard"><b>${esc(c.empresa||c.nombre||'—')}</b><span class="em">${esc(c.email||'')}</span></div>`).join(''):'<div class="muted" style="font-size:12px">—</div>')+
+      `</div>`; }).join('')||'<div class="muted">Sin datos de pipeline.</div>';
+}catch(e){ $('pipe-cols').innerHTML='<div class="muted">No se pudo cargar el pipeline.</div>'; } }
 
-  // chat real. Tino (control de cola) va al motor (instantáneo, sin tokens);
-  // el resto se dispara con Claude Code / Claude Max vía /api/claude/run.
-  sendMsg=async function(){
-    const v=$('dlg-in').value.trim(); if(!v) return;
-    const d=AG[current];
-    if(d.term){d.chat.push('&gt; '+v);} else {d.chat.push(['Vos','me',v]);}
-    $('dlg-in').value=''; renderLines(current);
-    if(d.term){ d.chat.push('&gt; …'); } else { d.chat.push([d.nm,d.cls,'…']); }
-    renderLines(current);
-    try{
-      let resp;
-      if(current==='tino'){
-        const j=await (await fetch('/api/agentes/ejecutor/chat',{method:'POST',
-          headers:{'Content-Type':'application/json'},body:JSON.stringify({mensaje:v})})).json();
-        resp=j.respuesta||'(sin respuesta)';
-      } else {
-        const j=await (await fetch('/api/claude/run',{method:'POST',
-          headers:{'Content-Type':'application/json'},body:JSON.stringify({agente:CLAUDE[current],objetivo:v})})).json();
-        resp=j.respuesta||'Disparé el agente con Claude Max. Mirá el progreso en su etiqueta.';
-      }
-      d.chat.pop(); if(d.term){d.chat.push('&gt; '+resp);} else {d.chat.push([d.nm,d.cls,resp]);}
-    }catch(e){ d.chat.pop(); if(d.term){d.chat.push('&gt; (sin conexión al backend)');} else {d.chat.push([d.nm,d.cls,'(sin conexión al backend)']);} }
-    renderLines(current); setTimeout(refreshAgents,600);
-  };
+async function loadContactos(){ try{
+  const r=await api('/api/contactos'); const tb=$('list-contactos');
+  if(!r.length){ tb.innerHTML='<tr><td colspan="4" class="empty">Sin contactos todavía. El buscador los va cargando.</td></tr>'; return; }
+  tb.innerHTML=r.slice(0,80).map(c=>`<tr><td>${esc(c.empresa||'—')}</td><td class="em">${esc(c.email||'')}</td><td>${esc(c.nicho||'')}</td><td>${chip(c.estado)}</td></tr>`).join('');
+}catch(e){ $('list-contactos').innerHTML='<tr><td colspan="4" class="muted">No se pudo cargar.</td></tr>'; } }
 
-  // lanzar campaña con Claude Max (orquestador .md) — sin tokens de API
-  $('camp-go')?.addEventListener('click',async()=>{
-    const obj=$('camp-obj').value.trim(); const m=$('camp-msg'); if(!obj) return;
-    m.textContent='Disparando orquestador (Claude Max)…'; m.style.color='#8a5a12';
-    try{
-      const j=await (await fetch('/api/claude/run',{method:'POST',
-        headers:{'Content-Type':'application/json'},body:JSON.stringify({agente:'aeltra-orquestador',objetivo:obj})})).json();
-      m.style.color='#0f7a5a'; m.textContent = j.respuesta || 'Orquestador disparado ✓ (mirá Agentes)';
-      refreshAgents();
-    }catch(e){ m.style.color='#b03730'; m.textContent='Error al lanzar'; }
-  });
+/* ── Campañas: performance (read-only) + detalle ── */
+async function loadDashboard(){ try{
+  const m=await api('/api/dashboard'); const tb=$('db-camps');
+  if(!m.campanias||!m.campanias.length){ tb.innerHTML='<tr><td colspan="9" class="empty">Sin campañas todavía.</td></tr>'; return; }
+  tb.innerHTML=m.campanias.map(c=>{const p=c.pasos||{};
+    return `<tr class="click" data-id="${c.id}"><td class="tabular">${c.id}</td><td>${esc(c.nombre||'')}</td>
+      <td>${c.tipo==='secuencia'?'<span class="chip chip-info">secuencia</span>':'<span class="chip chip-neutro">simple</span>'}</td>
+      <td class="tabular">${c.contactados||0}</td><td class="tabular">${p['1']||0}/${p['2']||0}/${p['3']||0}</td>
+      <td class="tabular">${c.rebotes||0}</td><td class="tabular">${c.tasa_entrega||0}%</td>
+      <td class="tabular">${c.exitos||0}</td><td class="tabular"><b>${c.tasa_respuesta||0}%</b></td></tr>`;}).join('');
+  tb.querySelectorAll('tr.click').forEach(tr=>tr.addEventListener('click',()=>verCampania(tr.dataset.id)));
+}catch(e){ $('db-camps').innerHTML='<tr><td colspan="9" class="muted">No se pudo cargar.</td></tr>'; } }
 
-  // ==== pestañas con datos reales ====
-  async function loadCampanias(){ try{
-    const r=await (await fetch('/api/campanias')).json(); const box=$('list-campanias'); if(!box)return;
-    if(!r.length){ box.innerHTML='<p class="hint" style="color:#777">Todavía no hay campañas. Lanzá una desde el Panel o hablándole a Nico.</p>'; return; }
-    box.innerHTML='<p class="hint" style="color:#777;margin:0 0 8px">Clic en una campaña para ver su detalle y estado.</p>'+
-      '<table class="htable"><thead><tr><th>#</th><th>Nombre</th><th>Objetivo</th><th>Estado</th></tr></thead><tbody>'+
-      r.map(c=>`<tr style="cursor:pointer" onclick="_verCampania(${c.id})"><td>${c.id}</td><td>${c.nombre||''}</td><td>${(c.objetivo||'').slice(0,60)}</td><td><span class="tag">${c.estado||''}</span></td></tr>`).join('')+'</tbody></table>';
-  }catch(e){} }
-  async function loadContactos(){ try{
-    const r=await (await fetch('/api/contactos')).json(); const box=$('list-contactos'); if(!box)return;
-    if(!r.length){ box.innerHTML='<p class="hint" style="color:#777">Sin contactos aún. El buscador los va a ir cargando.</p>'; return; }
-    box.innerHTML='<table class="htable"><thead><tr><th>Empresa</th><th>Email</th><th>Nicho</th><th>Estado</th></tr></thead><tbody>'+
-      r.slice(0,100).map(c=>`<tr><td>${c.empresa||'—'}</td><td>${c.email||''}</td><td>${c.nicho||''}</td><td><span class="tag">${c.estado||''}</span></td></tr>`).join('')+'</tbody></table>';
-  }catch(e){} }
-  async function loadRutinas(){ try{
-    const r=await (await fetch('/api/rutinas')).json(); const box=$('list-rutinas'); if(!box)return;
-    if(!r.length){ box.innerHTML='<p class="hint" style="color:#777">Sin rutinas automáticas todavía.</p>'; return; }
-    box.innerHTML='<table class="htable"><thead><tr><th>Nombre</th><th>Cuándo</th><th>Motor</th><th>Activa</th></tr></thead><tbody>'+
-      r.map(x=>`<tr><td>${x.nombre||''}</td><td>${x.hora||''} · ${x.frecuencia||''}</td><td>${x.motor||''}</td><td>${x.activa?'sí':'no'}</td></tr>`).join('')+'</tbody></table>';
-  }catch(e){} }
-  navs.forEach(n=>n.addEventListener('click',()=>{ const v=n.dataset.v;
-    if(v==='campanias')loadCampanias(); if(v==='contactos')loadContactos(); if(v==='rutinas')loadRutinas(); }));
+async function verCampania(id){ try{
+  const c=await api('/api/campanias/'+id); const env=c.envios||{}; const pl=c.plantilla||{};
+  const linea=['queued','sent','failed','skipped'].map(k=>k+': '+(env[k]||0)).join(' · ');
+  $('modal-hd').textContent='Campaña #'+c.id;
+  $('modal-body').textContent='Objetivo: '+(c.objetivo||'—')+'\nEstado: '+(c.estado||'—')+
+    '\nEnvíos → '+linea+' (total '+(c.total||0)+')\n\nAsunto: '+(pl.asunto||'—')+'\n\n'+(pl.cuerpo||'(sin copy)');
+  $('modal').classList.add('on');
+}catch(e){} }
+$('modal-x').addEventListener('click',()=>$('modal').classList.remove('on'));
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))$('modal').classList.remove('on');});
 
-  /* ==== globitos de completado (verde/rojo) + pop-up de resultado ==== */
-  const DONE={};
-  function showDone(a,ok,titulo,resultado,mensaje){ DONE[a]={ok,titulo,resultado,mensaje};
-    const b=$('done-'+a); if(!b)return; b.className='donebub '+(ok?'ok':'err'); b.textContent=ok?'✓':'!'; b.hidden=false; }
-  function hideDone(a){ const b=$('done-'+a); if(b)b.hidden=true; }
-  function placeDone(){ for(const a of ORDER){ const b=$('done-'+a),d=DESK[a]; if(b){ b.style.left=(d.sx*S)+'px'; b.style.top=((d.sy-50)*S)+'px'; } } }
-  placeDone();
-  function openRespop(a){ const d=DONE[a]||{}; $('respop-hd').textContent=(AG[a]?AG[a].nm:a)+' — '+(d.titulo||'Resultado');
-    $('respop-body').textContent=(d.resultado||d.mensaje||'(sin detalle todavía)'); $('respop').hidden=false; }
-  ORDER.forEach(a=>{ const b=$('done-'+a); if(b) b.addEventListener('click',()=>openRespop(a)); });
-  $('respop-x')?.addEventListener('click',()=>{$('respop').hidden=true;});
-  async function refreshDone(d){ try{ if(!d) d=await (await fetch('/api/agentes')).json();
-    for(const bk in d){ const a=REV[bk]; if(!a)continue; const s=d[bk]||{};
-      if(s.estado==='listo') showDone(a,true,s.titulo,s.resultado,s.mensaje);
-      else if(s.estado==='error') showDone(a,false,s.titulo,s.resultado,s.mensaje);
-      else hideDone(a);
-    } }catch(e){} }
-  // refreshDone ya no tiene su propio intervalo: lo dispara refreshAgents con el mismo fetch.
+/* ── Analytics (Chart.js) ── */
+let _chDia=null,_chNicho=null,_nichosLoaded=false;
+const CH_FONT={family:"'Inter',sans-serif",size:11};
+async function _loadNichos(){ if(_nichosLoaded)return; try{
+  const d=await api('/api/nichos'); const sel=$('mx-nicho');
+  (d.nichos||[]).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+  _nichosLoaded=true;
+}catch(e){} }
+async function loadMetricas(){ try{
+  if(typeof Chart==='undefined')return; await _loadNichos();
+  const nicho=$('mx-nicho').value||'', desde=$('mx-desde').value||'', hasta=$('mx-hasta').value||'';
+  const qs=new URLSearchParams(); if(nicho)qs.set('nicho',nicho); if(desde)qs.set('desde',desde); if(hasta)qs.set('hasta',hasta);
+  const m=await api('/api/metricas?'+qs.toString()); const t=m.totales||{};
+  const set=(id,v)=>{const e=$(id);if(e)e.textContent=v;};
+  set('mx-env',t.enviados||0); set('mx-tent',(t.tasa_entrega||0)+'%'); set('mx-resp',t.respuestas||0); set('mx-reb',t.rebotes||0);
+  $('mx-msg').textContent=(m.por_dia&&m.por_dia.length)?'':'Sin datos para ese filtro.';
+  const dias=m.por_dia||[];
+  if(_chDia)_chDia.destroy();
+  _chDia=new Chart($('mx-chart-dia'),{type:'line',data:{labels:dias.map(x=>x.fecha),
+    datasets:[{label:'Enviados',data:dias.map(x=>x.enviados),borderColor:'#2C4A7C',
+      backgroundColor:'rgba(44,74,124,.12)',fill:true,tension:.3,pointRadius:2}]},
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,ticks:{font:CH_FONT,color:'#5A6068'},grid:{color:'#F1EFEC'}},
+        x:{ticks:{font:CH_FONT,color:'#5A6068'},grid:{display:false}}}}});
+  const pn=m.por_nicho||[]; const nl=pn.map(x=>(x.nicho||'').replace(/^(empresas |estudios de |tiendas |clínicas y consultorios )/,''));
+  if(_chNicho)_chNicho.destroy();
+  _chNicho=new Chart($('mx-chart-nicho'),{type:'bar',data:{labels:nl,datasets:[
+    {label:'Enviados',data:pn.map(x=>x.enviados),backgroundColor:'#2C4A7C'},
+    {label:'Respuestas',data:pn.map(x=>x.respuestas),backgroundColor:'#1C7A55'},
+    {label:'Rebotes',data:pn.map(x=>x.rebotes),backgroundColor:'#B23B32'}]},
+    options:{responsive:true,plugins:{legend:{labels:{font:CH_FONT,color:'#5A6068',boxWidth:12}}},
+      scales:{y:{beginAtZero:true,ticks:{font:CH_FONT,color:'#5A6068'},grid:{color:'#F1EFEC'}},
+        x:{ticks:{font:CH_FONT,color:'#5A6068'},grid:{display:false}}}}});
+}catch(e){} }
+$('mx-go').addEventListener('click',loadMetricas);
 
-  /* ==== lanzar campaña desde la pestaña Campañas ==== */
-  $('camp2-go')?.addEventListener('click',async()=>{
-    const obj=$('camp2-obj').value.trim(); const m=$('camp2-msg'); if(!obj)return;
-    m.style.color='#8a5a12'; m.textContent='Disparando orquestador (Claude Max)…';
-    try{ const j=await (await fetch('/api/claude/run',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({agente:'aeltra-orquestador',objetivo:obj})})).json();
-      m.style.color='#0f7a5a'; m.textContent=j.respuesta||'Orquestador disparado ✓ (mirá el estado abajo)'; setTimeout(loadCampanias,1500);
-    }catch(e){ m.style.color='#b03730'; m.textContent='Error al lanzar'; }
-  });
-
-  /* ==== lanzar SECUENCIA (3 pasos) ==== */
-  $('seq-go')?.addEventListener('click',async()=>{
-    const g=id=>$(id).value.trim();
-    const nicho=g('seq-nicho'); if(!nicho){ $('seq-msg').textContent='Poné un nicho.'; return; }
-    const pasos=[{asunto:g('seq-a1'),cuerpo:g('seq-c1')},{asunto:g('seq-a2'),cuerpo:g('seq-c2')},{asunto:g('seq-a3'),cuerpo:g('seq-c3')}]
-      .filter(p=>p.asunto||p.cuerpo);
-    const cant=parseInt(g('seq-cant')||'25',10);
-    if(!confirm(`Vas a lanzar una secuencia REAL a hasta ${cant} contactos de «${nicho}». El paso 1 se manda de verdad (los follow-ups salen 24h/48h si no responden). ¿Confirmás?`)) return;
-    const m=$('seq-msg'); m.style.color='#8a5a12'; m.textContent='Buscando prospectos y encolando el paso 1…';
-    try{
-      const j=await (await fetch('/api/campanias/crear_secuencia',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({nicho, pais:g('seq-pais')||'Argentina', cantidad:cant,
-          ventana_horas:parseFloat(g('seq-ventana')||'6'), delay2_horas:parseFloat(g('seq-d2')||'24'),
-          delay3_horas:parseFloat(g('seq-d3')||'48'), pasos})})).json();
-      if(j.error){ m.style.color='#b03730'; m.textContent='Error: '+j.error; return; }
-      m.style.color='#0f7a5a'; m.textContent=`✅ Secuencia #${j.campania_id} lanzada · paso 1 encolado a ${j.encolados_paso1} (1 cada ${j.intervalo_seg}s). Follow-ups a +${j.delay2_horas}h y +${j.delay3_horas}h si no responden.`;
-      setTimeout(loadCampanias,1500);
-    }catch(e){ m.style.color='#b03730'; m.textContent='Error al lanzar la secuencia'; }
-  });
-
-  /* ==== detalle/estado de una campaña (clic en la fila) ==== */
-  async function verCampania(id){ try{
-    const c=await (await fetch('/api/campanias/'+id)).json();
-    const env=c.envios||{}; const linea=['queued','sent','failed','skipped'].map(k=>k+': '+(env[k]||0)).join(' · ');
-    const pl=c.plantilla||{};
-    $('respop-hd').textContent='Campaña #'+c.id;
-    $('respop-body').textContent='Objetivo: '+(c.objetivo||'')+'\nEstado: '+(c.estado||'')+
-      '\nEnvíos → '+linea+' (total '+(c.total||0)+')\n\nAsunto: '+(pl.asunto||'—')+'\n\n'+(pl.cuerpo||'(sin copy)');
-    $('respop').hidden=false;
-  }catch(e){} }
-  window._verCampania=verCampania;
-
-  /* ==== historial por agente (dentro del diálogo) ==== */
-  function loadHist(a){ const slot=MAP[a], box=$('dlg-hist'); if(!box)return; box.innerHTML='';
-    fetch('/api/agentes/'+slot+'/historial').then(r=>r.json()).then(rows=>{
-      if(!rows||!rows.length){ box.innerHTML='<div class="h" style="color:#999">Sin acciones registradas todavía.</div>'; return; }
-      box.innerHTML='<div class="h" style="color:#12324e"><b>Historial</b></div>'+
-        rows.map(x=>`<div class="h ${x.ok?'':'err'}"><em>${(x.created_at||'').slice(0,16).replace('T',' ')}</em> · <b>${(x.accion||'').slice(0,52)}</b>`+
-          (x.resultado?` · <a href="#" data-r="${encodeURIComponent(x.resultado)}" onclick="_verHist(this);return false">ver</a>`:'')+`</div>`).join('');
-    }).catch(()=>{});
-  }
-  window._verHist=function(el){ $('respop-hd').textContent='Resultado'; $('respop-body').textContent=decodeURIComponent(el.dataset.r); $('respop').hidden=false; };
-
-  /* ==== Dashboard (métricas) ==== */
-  async function loadDashboard(){ try{ const m=await (await fetch('/api/dashboard')).json();
-    const set=(id,v)=>{const e=$(id);if(e)e.textContent=(v==null?0:v);};
-    set('db-contactos',m.total_contactos); set('db-enviados',m.enviados); set('db-resp',m.respondio); set('db-clientes',m.clientes);
-    set('db-tentrega',(m.tasa_entrega!=null?m.tasa_entrega:0)+'%'); set('db-tresp',(m.tasa_respuesta!=null?m.tasa_respuesta:0)+'%'); set('db-rebotes',m.rebotes);
-    const box=$('db-camps'); if(!box)return;
-    if(!m.campanias||!m.campanias.length){ box.innerHTML='<p class="hint" style="color:#777">Sin campañas todavía.</p>'; return; }
-    box.innerHTML='<table class="htable"><thead><tr><th>#</th><th>Campaña</th><th>Tipo</th><th>Contactados</th><th>Pasos (1/2/3)</th><th>Rebotes</th><th>T. entrega</th><th>Respuestas</th><th>T. resp.</th></tr></thead><tbody>'+
-      m.campanias.map(c=>{const p=c.pasos||{};return `<tr style="cursor:pointer" onclick="_verCampania(${c.id})"><td>${c.id}</td><td>${c.nombre||''}</td><td>${c.tipo==='secuencia'?'📧 sec':'simple'}</td><td>${c.contactados||0}</td><td>${p['1']||0}/${p['2']||0}/${p['3']||0}</td><td>${c.rebotes||0}</td><td>${c.tasa_entrega||0}%</td><td>${c.exitos||0}</td><td><b>${c.tasa_respuesta||0}%</b></td></tr>`;}).join('')+'</tbody></table>';
-  }catch(e){} }
-
-  /* ==== Pipeline (kanban por estado) ==== */
-  const PIPE_LABEL={prospecto:'Prospecto',enviado:'Enviado',respondio:'Respondió',no_respondio:'No respondió',seguimiento:'En seguimiento',reunion:'Reunión agendada',cerrado:'Cerrado',perdido:'Perdido',rebote:'Rebote'};
-  async function loadPipeline(){ try{ const d=await (await fetch('/api/pipeline')).json();
-    const cols=$('pipe-cols'); if(!cols)return; const estados=d.estados||[]; const byEst={}; estados.forEach(e=>byEst[e]=[]);
-    (d.contactos||[]).forEach(c=>{ (byEst[c.estado]||(byEst[c.estado]=[])).push(c); });
-    cols.innerHTML=estados.map(e=>{ const items=byEst[e]||[];
-      return `<div class="pcol"><h4>${PIPE_LABEL[e]||e}<br><span>${items.length}</span></h4>`+
-        items.map(c=>`<div class="pcard"><b>${c.empresa||c.nombre||'—'}</b><span class="em">${c.email||''}</span>`+
-          `<select onchange="_mover(${c.id},this.value)">`+estados.map(x=>`<option value="${x}" ${x===c.estado?'selected':''}>${PIPE_LABEL[x]||x}</option>`).join('')+`</select></div>`).join('')+
-        `</div>`; }).join('');
-  }catch(e){} }
-  window._mover=async function(id,estado){ try{ await fetch('/api/pipeline/mover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,estado:estado})}); loadPipeline(); }catch(e){} };
-
-  /* ==== Analytics (Chart.js, filtros nicho/fecha) ==== */
-  let _chDia=null, _chNicho=null, _nichosLoaded=false;
-  async function _loadNichos(){ if(_nichosLoaded)return; try{
-    const d=await (await fetch('/api/nichos')).json(); const sel=$('mx-nicho'); if(!sel)return;
-    (d.nichos||[]).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
-    _nichosLoaded=true;
-  }catch(e){} }
-  async function loadMetricas(){ try{
-    if(typeof Chart==='undefined')return;   // CDN aún no cargó
-    await _loadNichos();
-    const nicho=$('mx-nicho')?.value||'', desde=$('mx-desde')?.value||'', hasta=$('mx-hasta')?.value||'';
-    const qs=new URLSearchParams(); if(nicho)qs.set('nicho',nicho); if(desde)qs.set('desde',desde); if(hasta)qs.set('hasta',hasta);
-    const m=await (await fetch('/api/metricas?'+qs.toString())).json();
-    const t=m.totales||{}; const set=(id,v)=>{const e=$(id);if(e)e.textContent=v;};
-    set('mx-env',t.enviados||0); set('mx-tent',(t.tasa_entrega||0)+'%'); set('mx-resp',t.respuestas||0); set('mx-reb',t.rebotes||0);
-    const msg=$('mx-msg'); if(msg)msg.textContent=(m.por_dia&&m.por_dia.length)?'':'Sin datos para ese filtro.';
-    // Gráfico por día
-    const dias=(m.por_dia||[]); const dl=dias.map(x=>x.fecha), dv=dias.map(x=>x.enviados);
-    if(_chDia)_chDia.destroy();
-    _chDia=new Chart($('mx-chart-dia'),{type:'line',data:{labels:dl,datasets:[{label:'Enviados',data:dv,borderColor:'#2b6cb0',backgroundColor:'rgba(43,108,176,.12)',fill:true,tension:.3}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
-    // Gráfico por nicho
-    const pn=(m.por_nicho||[]); const nl=pn.map(x=>x.nicho.replace(/^(empresas |estudios de |tiendas |clínicas y consultorios )/,''));
-    if(_chNicho)_chNicho.destroy();
-    _chNicho=new Chart($('mx-chart-nicho'),{type:'bar',data:{labels:nl,datasets:[
-      {label:'Enviados',data:pn.map(x=>x.enviados),backgroundColor:'#2b6cb0'},
-      {label:'Respuestas',data:pn.map(x=>x.respuestas),backgroundColor:'#0f7a5a'},
-      {label:'Rebotes',data:pn.map(x=>x.rebotes),backgroundColor:'#c0392b'}]},
-      options:{responsive:true,scales:{y:{beginAtZero:true}}}});
-  }catch(e){} }
-  $('mx-go')?.addEventListener('click',loadMetricas);
-
-  navs.forEach(n=>n.addEventListener('click',()=>{ const v=n.dataset.v;
-    if(v==='dashboard'){loadDashboard(); loadMetricas();} if(v==='pipeline')loadPipeline(); }));
+/* ── Arranque + poll suave ── */
+refresh();
+setInterval(refresh,10000);
 </script>
 </body>
 </html>
