@@ -137,6 +137,8 @@ main{max-width:1240px;margin:0 auto;padding:22px 24px 60px}
 .pcard{background:var(--superficie);border:1px solid var(--borde);border-radius:12px;padding:9px 11px;margin-bottom:8px}
 .pcard b{font-size:13px;font-weight:600}
 .pcard .em{display:block;font-size:11px;color:var(--tinta-suave);word-break:break-all;margin-top:2px}
+.pcard.click{cursor:pointer;transition:border-color .15s,background .15s}
+.pcard.click:hover{border-color:var(--acento);background:var(--acento-50)}
 
 /* ── Filtros Analytics ── */
 .filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
@@ -162,6 +164,45 @@ canvas{max-width:100%}
 .modal .mx:hover{background:var(--piedra-200)}
 .modal .mb{padding:20px 22px;overflow:auto}
 .modal pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:14px;line-height:1.55}
+
+/* ── Panel lateral de detalle de contacto (como el pipeline de RRHHIA) ── */
+.drawer-bg{position:fixed;inset:0;z-index:40;background:rgba(22,24,29,.35);backdrop-filter:blur(3px);
+  display:none;opacity:0;transition:opacity .2s}
+.drawer-bg.on{display:block;opacity:1}
+.drawer{position:fixed;inset-block:0;right:0;z-index:41;width:min(460px,100%);display:flex;flex-direction:column;
+  background:var(--superficie);border-left:1px solid var(--borde);box-shadow:var(--sombra-panel);
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.16,1,.3,1)}
+.drawer.on{transform:none}
+.drawer .dh{display:flex;align-items:flex-start;gap:12px;padding:20px 22px;border-bottom:1px solid var(--borde)}
+.drawer .dh .av{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;
+  background:var(--acento-50);color:var(--acento);font-weight:700;font-size:18px}
+.drawer .dh h3{font-size:16px;line-height:1.25;word-break:break-word}
+.drawer .dh .sub{font-size:13px;color:var(--tinta-suave);margin-top:2px;word-break:break-all}
+.drawer .dh .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.drawer .dx{border:0;background:var(--piedra-100);width:30px;height:30px;border-radius:50%;cursor:pointer;
+  color:var(--tinta-suave);font-size:15px;flex:none}
+.drawer .dx:hover{background:var(--piedra-200)}
+.drawer .db{flex:1;overflow-y:auto;padding:20px 22px}
+.drawer .sec-t{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--tinta-suave);margin:0 0 12px}
+.drawer .sec+.sec{margin-top:26px}
+.info-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--piedra-100);font-size:13px}
+.info-row:last-child{border-bottom:0}
+.info-row .k{color:var(--tinta-suave)}
+.info-row .v{text-align:right;word-break:break-word}
+/* Timeline del historial */
+.tl{position:relative;padding-left:22px}
+.tl::before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--piedra-200)}
+.tl-item{position:relative;padding:0 0 16px}
+.tl-item:last-child{padding-bottom:0}
+.tl-item .node{position:absolute;left:-22px;top:2px;width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--superficie);background:var(--piedra-300)}
+.tl-item.apto .node{background:var(--apto)} .tl-item.fuera .node{background:var(--fuera)}
+.tl-item.alerta .node{background:var(--alerta)} .tl-item.info .node{background:var(--acento)}
+.tl-item .tt{font-size:13px;font-weight:500}
+.tl-item .meta{font-size:11px;color:var(--tinta-suave);margin-top:1px}
+.tl-item .extra{font-size:12px;color:var(--tinta-suave);margin-top:3px;background:var(--piedra-50);
+  border-radius:8px;padding:5px 8px;word-break:break-word}
 
 @media(max-width:820px){
   .kpis{grid-template-columns:repeat(2,1fr)}
@@ -279,6 +320,30 @@ canvas{max-width:100%}
     <div class="mb"><pre id="modal-body"></pre></div>
   </div>
 </div>
+
+<!-- Panel lateral de detalle de contacto (pipeline) -->
+<div class="drawer-bg" id="dw-bg"></div>
+<aside class="drawer" id="dw">
+  <div class="dh">
+    <div class="av" id="dw-av">·</div>
+    <div class="min-w-0" style="flex:1;min-width:0">
+      <h3 id="dw-nm">—</h3>
+      <div class="sub" id="dw-email"></div>
+      <div class="chips" id="dw-chips"></div>
+    </div>
+    <button class="dx" id="dw-x">✕</button>
+  </div>
+  <div class="db">
+    <div class="sec">
+      <div class="sec-t">Historial de acciones</div>
+      <div id="dw-tl"><div class="muted">Cargando…</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">Información</div>
+      <div id="dw-info"></div>
+    </div>
+  </div>
+</aside>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -398,14 +463,14 @@ async function loadPipeline(){ try{
   (d.contactos||[]).forEach(c=>{ (by[c.estado]||(by[c.estado]=[])).push(c); });
   cols.innerHTML=estados.map(e=>{ const it=by[e]||[];
     return `<div class="col"><h4>${PIPE_LABEL[e]||e}<span class="n">${it.length}</span></h4>`+
-      (it.length?it.slice(0,40).map(c=>`<div class="pcard"><b>${esc(c.empresa||c.nombre||'—')}</b><span class="em">${esc(c.email||'')}</span></div>`).join(''):'<div class="muted" style="font-size:12px">—</div>')+
+      (it.length?it.slice(0,40).map(c=>`<div class="pcard click" data-id="${c.id}"><b>${esc(c.empresa||c.nombre||'—')}</b><span class="em">${esc(c.email||'')}</span></div>`).join(''):'<div class="muted" style="font-size:12px">—</div>')+
       `</div>`; }).join('')||'<div class="muted">Sin datos de pipeline.</div>';
 }catch(e){ $('pipe-cols').innerHTML='<div class="muted">No se pudo cargar el pipeline.</div>'; } }
 
 async function loadContactos(){ try{
   const r=await api('/api/contactos'); const tb=$('list-contactos');
   if(!r.length){ tb.innerHTML='<tr><td colspan="4" class="empty">Sin contactos todavía. El buscador los va cargando.</td></tr>'; return; }
-  tb.innerHTML=r.slice(0,80).map(c=>`<tr><td>${esc(c.empresa||'—')}</td><td class="em">${esc(c.email||'')}</td><td>${esc(c.nicho||'')}</td><td>${chip(c.estado)}</td></tr>`).join('');
+  tb.innerHTML=r.slice(0,80).map(c=>`<tr class="click" data-id="${c.id}"><td>${esc(c.empresa||'—')}</td><td class="em">${esc(c.email||'')}</td><td>${esc(c.nicho||'')}</td><td>${chip(c.estado)}</td></tr>`).join('');
 }catch(e){ $('list-contactos').innerHTML='<tr><td colspan="4" class="muted">No se pudo cargar.</td></tr>'; } }
 
 /* ── Campañas: performance (read-only) + detalle ── */
@@ -431,6 +496,66 @@ async function verCampania(id){ try{
 }catch(e){} }
 $('modal-x').addEventListener('click',()=>$('modal').classList.remove('on'));
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))$('modal').classList.remove('on');});
+
+/* ── Panel lateral de detalle de contacto (pipeline + tabla de contactos) ── */
+const fechaCorta=s=>{ if(!s)return''; const d=new Date((s||'').replace(' ','T'));
+  return isNaN(d)?String(s).slice(0,16).replace('T',' '):d.toLocaleString('es-AR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); };
+const _ts=s=>{ const d=new Date((s||'').replace(' ','T')); return isNaN(d)?0:d.getTime(); };
+const ENVIO_TXT={sent:['📤','enviado','info'],queued:['🕓','en cola','neutro'],
+  failed:['✗','falló','fuera'],skipped:['⏭','omitido','neutro']};
+const EVENTO_TXT={respuesta:['💬','Respondió','apto'],baja:['🚫','Pidió la baja','fuera'],
+  rebote:['⚠','Rebotó','fuera'],apertura:['👁','Abrió el correo','info']};
+
+function _timeline(d){
+  const items=[];
+  (d.envios||[]).forEach(e=>{ const t=ENVIO_TXT[e.status]||['•',e.status||'',''];
+    items.push({ts:_ts(e.sent_at||e.scheduled_at), tono:t[2], ico:t[0],
+      tt:`Paso ${e.paso||1} · ${t[1]}`, meta:fechaCorta(e.sent_at||e.scheduled_at)+(e.sent_at?'':' (programado)'),
+      extra:e.error||''}); });
+  (d.eventos||[]).forEach(ev=>{
+    if(ev.tipo==='envio') return;   // ya representado por la fila de envío (paso + estado)
+    const t=EVENTO_TXT[ev.tipo]||['•',ev.tipo||'',''];
+    let asunto=''; try{ asunto=(JSON.parse(ev.payload||'{}').asunto)||''; }catch(_){}
+    items.push({ts:_ts(ev.created_at), tono:t[2], ico:t[0], tt:t[1],
+      meta:fechaCorta(ev.created_at), extra:asunto}); });
+  items.sort((a,b)=>b.ts-a.ts);   // más nuevo arriba
+  if(!items.length) return '<div class="muted">Sin acciones registradas todavía.</div>';
+  let html='<div class="tl">'+items.map(i=>
+    `<div class="tl-item ${i.tono}"><span class="node"></span>
+      <div class="tt">${i.ico} ${esc(i.tt)}</div><div class="meta">${esc(i.meta)}</div>`+
+      (i.extra?`<div class="extra">${esc(i.extra)}</div>`:'')+`</div>`).join('')+'</div>';
+  if(d.eventos_total>50)
+    html+=`<div class="muted" style="margin-top:8px">Se muestran los últimos 50 de ${d.eventos_total} eventos</div>`;
+  return html;
+}
+
+async function openContacto(id){
+  $('dw-bg').classList.add('on'); $('dw').classList.add('on');
+  $('dw-nm').textContent='Cargando…'; $('dw-email').textContent='';
+  $('dw-chips').innerHTML=''; $('dw-tl').innerHTML='<div class="muted">Cargando…</div>'; $('dw-info').innerHTML='';
+  try{
+    const d=await api('/api/contactos/'+id);
+    const nm=d.empresa||d.nombre||'(sin nombre)';
+    $('dw-av').textContent=(nm.trim()[0]||'·').toUpperCase();
+    $('dw-nm').textContent=nm;
+    $('dw-email').textContent=d.email||'';
+    $('dw-chips').innerHTML=chip(d.estado)+(d.nicho?` <span class="chip chip-neutro">${esc(d.nicho)}</span>`:'')+
+      (d.campania_nombre?` <span class="chip chip-info">${esc(d.campania_nombre)}</span>`:'');
+    $('dw-tl').innerHTML=_timeline(d);
+    const info=[['Empresa',d.empresa],['Contacto',d.nombre],['Email',d.email],['Nicho',d.nicho],
+      ['País',d.pais],['Estado',PIPE_LABEL[d.estado]||d.estado],['Fuente',d.fuente],
+      ['Alta',fechaCorta(d.created_at)]];
+    $('dw-info').innerHTML=info.filter(r=>r[1]).map(r=>
+      `<div class="info-row"><span class="k">${r[0]}</span><span class="v">${esc(r[1])}</span></div>`).join('');
+  }catch(e){ $('dw-tl').innerHTML='<div class="muted">No se pudo cargar el detalle.</div>'; }
+}
+function closeContacto(){ $('dw').classList.remove('on'); $('dw-bg').classList.remove('on'); }
+$('dw-x').addEventListener('click',closeContacto);
+$('dw-bg').addEventListener('click',closeContacto);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeContacto(); $('modal').classList.remove('on'); } });
+// Delegación: tarjetas del pipeline y filas de contactos
+$('pipe-cols').addEventListener('click',e=>{ const el=e.target.closest('.pcard[data-id]'); if(el)openContacto(el.dataset.id); });
+$('list-contactos').addEventListener('click',e=>{ const tr=e.target.closest('tr[data-id]'); if(tr)openContacto(tr.dataset.id); });
 
 /* ── Analytics (Chart.js) ── */
 let _chDia=null,_chNicho=null,_nichosLoaded=false;

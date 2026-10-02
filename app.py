@@ -337,6 +337,37 @@ def api_campania_detalle(cid: int):
         conn.close()
 
 
+@app.get("/api/contactos/{cid}")
+def api_contacto_detalle(cid: int):
+    """Detalle de un contacto + su HISTORIAL de acciones (envíos por paso + eventos:
+    respuesta/rebote/baja). Alimenta el panel lateral del pipeline."""
+    conn = get_conn()
+    try:
+        c = conn.execute("SELECT * FROM contactos WHERE id=?", (cid,)).fetchone()
+        if not c:
+            return JSONResponse({"error": "no existe"}, status_code=404)
+        d = dict(c)
+        camp = None
+        if d.get("campania_id"):
+            r = conn.execute("SELECT nombre FROM campanias WHERE id=?", (d["campania_id"],)).fetchone()
+            camp = r["nombre"] if r else None
+        d["campania_nombre"] = camp
+        d["envios"] = [dict(r) for r in conn.execute(
+            "SELECT paso, status, scheduled_at, sent_at, error FROM envios "
+            "WHERE contacto_id=? ORDER BY id", (cid,))]
+        # Últimos 50 (orden cronológico). Nota: hay contactos con miles de eventos
+        # 'rebote' duplicados (la lectura de IMAP re-loguea el mismo rebote) → cap.
+        ev = [dict(r) for r in conn.execute(
+            "SELECT tipo, payload, created_at FROM eventos "
+            "WHERE contacto_id=? ORDER BY id DESC LIMIT 50", (cid,))]
+        d["eventos"] = list(reversed(ev))
+        d["eventos_total"] = conn.execute(
+            "SELECT COUNT(*) FROM eventos WHERE contacto_id=?", (cid,)).fetchone()[0]
+        return d
+    finally:
+        conn.close()
+
+
 # ── Pipeline (estados de cliente) ──
 class MoverReq(BaseModel):
     id: int
