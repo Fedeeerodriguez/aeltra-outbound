@@ -33,14 +33,28 @@ def _norm(addr):
 
 
 def _cuerpo_texto(msg):
-    partes = []
+    partes, html = [], []
     for p in (msg.walk() if msg.is_multipart() else [msg]):
-        if p.get_content_type() in ("text/plain", "message/delivery-status"):
+        ct = p.get_content_type()
+        if ct in ("text/plain", "message/delivery-status"):
             try:
                 partes.append(p.get_payload(decode=True).decode(p.get_content_charset() or "utf-8", "replace"))
             except Exception:
                 pass
-    return "\n".join(partes)
+        elif ct == "text/html":
+            try:
+                html.append(p.get_payload(decode=True).decode(p.get_content_charset() or "utf-8", "replace"))
+            except Exception:
+                pass
+    texto = "\n".join(partes).strip()
+    if texto:
+        return texto
+    # Fallback: muchos autorespondedores vienen solo en HTML → quitar tags.
+    h = "\n".join(html)
+    h = re.sub(r"(?is)<(script|style).*?</\1>", " ", h)
+    h = re.sub(r"(?s)<[^>]+>", " ", h)
+    h = h.replace("&nbsp;", " ").replace("&amp;", "&")
+    return re.sub(r"[ \t]+", " ", h)
 
 
 _OPTOUT_RE = re.compile(
@@ -59,6 +73,47 @@ def _texto_propio(raw_text):
 
 def _es_opt_out(raw_text):
     return bool(_OPTOUT_RE.search(_texto_propio(raw_text)))
+
+
+# ── Autorespondedores (out-of-office / "te contesto a la brevedad") ──
+# Si matchea, NO cuenta como respuesta real ni corta el follow-up.
+_AUTORESP_RE = re.compile(
+    r"respuesta autom|automatic reply|auto-?reply|out of office|fuera de (la )?oficina|"
+    r"su (correo|mensaje) ser[áa] respondido|responder[ée] (a la brevedad|pronto)|"
+    r"lo leer[ée] a la brevedad|recib[íi] tu mensaje|gracias por (escribir|contactar)|"
+    r"agradecemos (que se haya puesto en contacto|su (correo|mensaje|contacto))|"
+    r"en este momento no puedo responder|estaremos en contacto|recibido, enviado desde|"
+    r"vacation|de vacaciones|ausente", re.I)
+
+# Teléfonos: secuencias con +, paréntesis, espacios y guiones (7–15 dígitos).
+_TEL_RE = re.compile(r"(?<![\w.])(\+?\d[\d\s().\-]{6,}\d)(?![\w])")
+_WA_RE = re.compile(r"whats\s*app|wsp|wpp|wa\.me", re.I)
+
+
+def _es_autoresponder(msg, texto):
+    """True si el mensaje es un autorespondedor (por headers o por frases típicas)."""
+    try:
+        if (msg.get("Auto-Submitted") or "").lower().strip() not in ("", "no"):
+            return True
+        if (msg.get("Precedence") or "").lower().strip() in ("bulk", "auto_reply", "junk"):
+            return True
+        for h in ("X-Autoreply", "X-Autorespond", "X-Auto-Response-Suppress"):
+            if msg.get(h):
+                return True
+    except Exception:
+        pass
+    return bool(_AUTORESP_RE.search(texto or ""))
+
+
+def _extraer_telefonos(texto):
+    """Devuelve (telefonos, es_whatsapp). Filtra ruido (7–15 dígitos)."""
+    out, vistos = [], set()
+    for m in _TEL_RE.findall(texto or ""):
+        digitos = re.sub(r"\D", "", m)
+        if 7 <= len(digitos) <= 15 and digitos not in vistos:
+            vistos.add(digitos)
+            out.append(m.strip())
+    return out, bool(_WA_RE.search(texto or ""))
 
 
 def _es_rebote(frm, subj):
@@ -91,19 +146,21 @@ def _aplicar(frm, subj, get_raw):
             bad = None
         if bad:
             c = pipeline.find_contact_by_email(bad)
-            if c:
+            # Dedupe: con IMAP el rebote queda UNSEEN y se re-lee → no re-loguear.
+            if c and c.get("estado") != "rebote":
                 pipeline.marcar_rebote(c["id"], bad)
                 pipeline.add_evento(c["id"], "rebote", {"asunto": (subj or "")[:200]})
                 return "rebote"
         return None
     c = pipeline.find_contact_by_email(frm)
     if c and c.get("estado") in _ESTADOS_ABIERTOS:
-        # Leer el cuerpo para detectar pedido de BAJA (opt-out) en el texto propio.
         texto = ""
         try:
-            texto = _cuerpo_texto(email.message_from_bytes(get_raw()))
+            msg = email.message_from_bytes(get_raw())
+            texto = _cuerpo_texto(msg)
         except Exception:
-            pass
+            msg = None
+        # 1) Pedido de BAJA (opt-out) en el texto propio → suprimir.
         if _es_opt_out(texto):
             pipeline.add_supresion(frm, "baja-por-respuesta")
             pipeline.cancel_pending_envios(c["id"])
@@ -111,6 +168,22 @@ def _aplicar(frm, subj, get_raw):
             pipeline.add_evento(c["id"], "baja", {"asunto": (subj or "")[:200]})
             pipeline.log_agente("ejecutor", f"BAJA de {frm} (opt-out)", (subj or "")[:200], True)
             return "baja"
+        # 2) Autorespondedor → NO cuenta como respuesta ni corta el follow-up.
+        #    Si deja teléfono/WhatsApp, lo guardamos como lead CONTACTABLE.
+        if msg is not None and _es_autoresponder(msg, texto):
+            if pipeline.contacto_tiene_evento(c["id"], "auto"):
+                return "auto"          # ya procesado antes (dedupe)
+            tels, es_wa = _extraer_telefonos(texto)
+            pipeline.add_evento(c["id"], "auto", {"asunto": (subj or "")[:200]})
+            if tels:
+                pipeline.add_evento(c["id"], "auto_contacto",
+                                    {"telefonos": tels, "whatsapp": es_wa,
+                                     "asunto": (subj or "")[:200]})
+                pipeline.log_agente("ejecutor", f"Autoresponder con tel/WA de {frm}",
+                                    ", ".join(tels), True)
+                return "auto_contacto"
+            return "auto"
+        # 3) Respuesta genuina de un humano.
         pipeline.marcar_respondio(c["id"])
         pipeline.cancel_pending_envios(c["id"])
         pipeline.add_evento(c["id"], "respuesta", {"asunto": (subj or "")[:200]})
@@ -137,7 +210,7 @@ def _revisar_gmail(max_msgs=100):
     last = int(pipeline.kv_get("inbox_last_ts", "0") or 0)
     lst = svc.users().messages().list(userId="me", q="in:inbox newer_than:3d",
                                       maxResults=max_msgs).execute()
-    respondieron = rebotes = revisados = bajas = 0
+    respondieron = rebotes = revisados = bajas = contactables = 0
     nuevo_max = last
     for m in lst.get("messages", []):
         meta = svc.users().messages().get(
@@ -162,15 +235,18 @@ def _revisar_gmail(max_msgs=100):
             rebotes += 1
         elif r == "baja":
             bajas += 1
+        elif r == "auto_contacto":
+            contactables += 1
     if nuevo_max > last:
         pipeline.kv_set("inbox_last_ts", nuevo_max)
     return {"ok": True, "backend": "gmail", "revisados": revisados,
-            "respondieron": respondieron, "rebotes": rebotes, "bajas": bajas}
+            "respondieron": respondieron, "rebotes": rebotes, "bajas": bajas,
+            "contactables": contactables}
 
 
 # ── Backend IMAP ──
 def _revisar_imap(max_msgs=80):
-    respondieron = rebotes = revisados = bajas = 0
+    respondieron = rebotes = revisados = bajas = contactables = 0
     M = imaplib.IMAP4_SSL(config.IMAP_HOST, config.IMAP_PORT)
     M.login(config.IMAP_USER, config.IMAP_PASS)
     M.select("INBOX")
@@ -185,16 +261,19 @@ def _revisar_imap(max_msgs=80):
         revisados += 1
         msg = email.message_from_bytes(md[0][1])
         frm = _norm(msg.get("From", "")); subj = msg.get("Subject", "") or ""
-        r = _aplicar(frm, subj, lambda: md[0][1])
+        r = _aplicar(frm, subj, lambda md=md: md[0][1])
         if r == "respuesta":
             respondieron += 1
         elif r == "rebote":
             rebotes += 1
         elif r == "baja":
             bajas += 1
+        elif r == "auto_contacto":
+            contactables += 1
     M.logout()
     return {"ok": True, "backend": "imap", "revisados": revisados,
-            "respondieron": respondieron, "rebotes": rebotes, "bajas": bajas}
+            "respondieron": respondieron, "rebotes": rebotes, "bajas": bajas,
+            "contactables": contactables}
 
 
 def revisar(max_msgs=100):

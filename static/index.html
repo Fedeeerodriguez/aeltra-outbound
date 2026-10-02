@@ -226,6 +226,7 @@ canvas{max-width:100%}
     <div class="tabrow">
       <button class="tab on" data-v="resumen">Resumen</button>
       <button class="tab" data-v="alertas">Alertas <span class="cnt" id="t-alertas"></span></button>
+      <button class="tab" data-v="contactables">Contactables <span class="cnt" id="t-contactables"></span></button>
       <button class="tab" data-v="seguimiento">Seguimiento</button>
       <button class="tab" data-v="campanias">Campañas</button>
       <button class="tab" data-v="analytics">Analytics</button>
@@ -263,6 +264,12 @@ canvas{max-width:100%}
   <section class="view" id="v-alertas">
     <div class="vhead"><div><h2>Alertas</h2><p>Lo que conviene mirar: entrega, rebotes, cola, configuración y agentes.</p></div></div>
     <div id="alertas-list"><div class="muted">Cargando…</div></div>
+  </section>
+
+  <!-- ===== CONTACTABLES ===== -->
+  <section class="view" id="v-contactables">
+    <div class="vhead"><div><h2>Contactables</h2><p>Autorespondedores que dejaron teléfono o WhatsApp. No son respuestas de interés, pero sí una vía directa para contactarlos (ideal por WhatsApp).</p></div></div>
+    <div id="contactables-list"><div class="muted">Cargando…</div></div>
   </section>
 
   <!-- ===== SEGUIMIENTO ===== -->
@@ -359,6 +366,7 @@ tabs.forEach(t=>t.addEventListener('click',()=>{
   if(v==='campanias')loadDashboard();
   if(v==='analytics')loadMetricas();
   if(v==='alertas')computeAlertas();
+  if(v==='contactables')loadContactables();
 }));
 
 /* ── Mapas de estado ── */
@@ -405,6 +413,7 @@ async function refresh(){
   $('k-prosp').textContent=(s.prospectos!=null?s.prospectos:'—')+' prospectos';
   loadAgentes();
   computeAlertas();
+  loadContactables();   // mantiene el contador del tab al día
   $('live-txt').textContent='actualizado '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
 }
 
@@ -472,6 +481,30 @@ async function loadContactos(){ try{
   if(!r.length){ tb.innerHTML='<tr><td colspan="4" class="empty">Sin contactos todavía. El buscador los va cargando.</td></tr>'; return; }
   tb.innerHTML=r.slice(0,80).map(c=>`<tr class="click" data-id="${c.id}"><td>${esc(c.empresa||'—')}</td><td class="em">${esc(c.email||'')}</td><td>${esc(c.nicho||'')}</td><td>${chip(c.estado)}</td></tr>`).join('');
 }catch(e){ $('list-contactos').innerHTML='<tr><td colspan="4" class="muted">No se pudo cargar.</td></tr>'; } }
+
+/* ── Contactables: autorespondedores con teléfono/WhatsApp ── */
+const _digs=s=>(s||'').replace(/\D/g,'');
+async function loadContactables(){ try{
+  const r=await api('/api/contactables'); const box=$('contactables-list');
+  const n=r.length; const badge=$('t-contactables'); if(badge)badge.textContent=n?('· '+n):'';
+  if(!n){ box.innerHTML='<div class="empty">Todavía no hay contactables. Cuando un autorespondedor deje un teléfono o WhatsApp, aparece acá.</div>'; return; }
+  box.innerHTML='<div class="grid2">'+r.map(c=>{
+    const tels=(c.telefonos||[]).map(t=>{ const d=_digs(t);
+      const wa=d.length>=10?`<a href="https://wa.me/${d}" target="_blank" rel="noopener" class="chip chip-apto" style="text-decoration:none">WhatsApp ${esc(t)}</a>`:'';
+      const tel=`<a href="tel:${d}" class="chip chip-neutro" style="text-decoration:none">☎ ${esc(t)}</a>`;
+      return (c.whatsapp&&wa)?wa:tel; }).join(' ');
+    return `<div class="card pad-sm">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div style="min-width:0"><div style="font-weight:600">${esc(c.empresa||c.email||'—')}</div>
+          <div class="muted" style="font-size:12px;word-break:break-all">${esc(c.email||'')}</div></div>
+        ${c.whatsapp?'<span class="chip chip-apto">WhatsApp</span>':''}
+      </div>
+      <div style="margin:9px 0 10px;display:flex;flex-wrap:wrap;gap:6px">
+        ${c.nicho?`<span class="chip chip-neutro">${esc(c.nicho)}</span>`:''}
+        ${c.pais?`<span class="chip chip-neutro">${esc(c.pais)}</span>`:''}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${tels||'<span class="muted" style="font-size:12px">sin número</span>'}</div>
+    </div>`;}).join('')+'</div>';
+}catch(e){ $('contactables-list').innerHTML='<div class="muted">No se pudo cargar.</div>'; } }
 
 /* ── Campañas: performance (read-only) + detalle ── */
 async function loadDashboard(){ try{

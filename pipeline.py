@@ -157,6 +157,29 @@ def add_evento(contacto_id, tipo, payload=None):
     conn.commit()
     conn.close()
 
+def contacto_tiene_evento(contacto_id, tipo):
+    """¿El contacto ya tiene un evento de ese tipo? Evita re-loguear en cada lectura
+    de IMAP (los mensajes quedan UNSEEN con PEEK y se re-procesan)."""
+    conn = get_conn()
+    r = conn.execute("SELECT 1 FROM eventos WHERE contacto_id=? AND tipo=? LIMIT 1",
+                     (contacto_id, tipo)).fetchone()
+    conn.close()
+    return bool(r)
+
+def contactables():
+    """Contactos cuyo autoresponder dejó un teléfono/WhatsApp (evento 'auto_contacto').
+    Apartado especial: leads que podemos contactar por otra vía (WhatsApp/tel)."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT c.id, c.empresa, c.nombre, c.email, c.nicho, c.pais, c.estado, "
+        "       e.payload, e.created_at "
+        "FROM eventos e JOIN contactos c ON c.id = e.contacto_id "
+        "WHERE e.tipo='auto_contacto' "
+        "AND e.id IN (SELECT MAX(id) FROM eventos WHERE tipo='auto_contacto' GROUP BY contacto_id) "
+        "ORDER BY e.id DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
 # ── Métricas ──
 def stats():
     conn = get_conn()

@@ -368,6 +368,26 @@ def api_contacto_detalle(cid: int):
         conn.close()
 
 
+@app.get("/api/contactables")
+def api_contactables():
+    """Apartado especial: autorespondedores que dejaron teléfono/WhatsApp → leads
+    que podemos contactar por otra vía (WhatsApp/tel)."""
+    import json as _json
+    out = []
+    for r in pipeline.contactables():
+        tel, wa = [], False
+        try:
+            p = _json.loads(r.get("payload") or "{}")
+            tel = p.get("telefonos") or []
+            wa = bool(p.get("whatsapp"))
+        except Exception:
+            pass
+        out.append({"id": r["id"], "empresa": r.get("empresa"), "email": r.get("email"),
+                    "nicho": r.get("nicho"), "pais": r.get("pais"), "estado": r.get("estado"),
+                    "telefonos": tel, "whatsapp": wa, "fecha": r.get("created_at")})
+    return out
+
+
 # ── Pipeline (estados de cliente) ──
 class MoverReq(BaseModel):
     id: int

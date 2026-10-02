@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 import pipeline
 from db import get_conn
 from agents import search_agent
+from agents.prospect_sources import email_valido
 
 # Rotación geográfica: Argentina (varias provincias) + países de habla hispana.
 # Cada corrida toma las próximas K zonas → Apify trae negocios frescos cada día.
@@ -102,6 +103,16 @@ def lanzar_secuencia_rutina(nicho, pais, cantidad, ventana_horas, pasos, delay2,
         if row["email"] in vistos or not _sin_envio_ni_supresion(row["id"], row["email"]):
             continue
         vistos.add(row["email"])
+        # Validación también en el backlog (no solo al scrapear): la basura vieja
+        # que ya estaba guardada no debe salir. Si no es entregable, se descarta.
+        if not email_valido(row["email"]):
+            conn.execute("UPDATE contactos SET estado='perdido' WHERE id=?", (row["id"],))
+            try:
+                conn.execute("INSERT INTO supresion (email, motivo) VALUES (?, ?)",
+                             (row["email"], "email-invalido"))
+            except Exception:
+                pass
+            continue
         nuevos.append({"contacto_id": row["id"], "email": row["email"], "empresa": row["empresa"]})
 
     # 2) Si el backlog no alcanza, recién ahí scrapeamos NUEVOS (rotación de zonas).
