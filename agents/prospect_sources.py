@@ -14,17 +14,86 @@ EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
 _ASSET_TLDS = ("png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp",
                "css", "js", "mp4", "webm", "woff", "woff2", "ttf", "eot", "pdf")
 
+# Dominios placeholder / de ejemplo que aparecen en plantillas de sitios web y
+# siempre rebotan (Null MX o inexistentes). Son la causa #1 de rebotes basura.
+_DOMINIOS_BLOQUEADOS = {
+    "example.com", "example.org", "example.net", "ejemplo.com", "ejemplo.org",
+    "mysite.com", "yoursite.com", "yourdomain.com", "domain.com", "dominio.com",
+    "test.com", "tucorreo.com", "tuempresa.com", "email.com", "correo.com",
+    "sitename.com", "website.com", "sentry.io", "wixpress.com", "localhost",
+    "from.arch", "tv.gb",
+}
+# Usuarios obviamente de plantilla.
+_USUARIOS_BLOQUEADOS = {"email", "youremail", "tuemail", "name", "nombre", "user",
+                        "usuario", "ejemplo", "example", "sample", "test"}
+
 def es_email_plausible(email: str) -> bool:
-    """Descarta assets (logo@2x.png), retina (@2x/@3x) y TLDs de archivo."""
+    """Descarta assets (logo@2x.png), retina (@2x/@3x), TLDs de archivo,
+    dominios placeholder (example.com/ejemplo.com/…) y usuarios de plantilla."""
     e = (email or "").strip().lower()
     if "@" not in e:
         return False
-    dominio = e.rsplit("@", 1)[1]
+    usuario, dominio = e.rsplit("@", 1)
     if "@2x" in e or "@3x" in e:
         return False
     if dominio.rsplit(".", 1)[-1] in _ASSET_TLDS:
         return False
+    if dominio in _DOMINIOS_BLOQUEADOS:
+        return False
+    if usuario in _USUARIOS_BLOQUEADOS:
+        return False
+    if "." not in dominio or dominio.startswith(".") or dominio.endswith("."):
+        return False
     return True
+
+
+# Caché por dominio para no re-resolver DNS en cada lead del mismo dominio.
+_MX_CACHE = {}
+
+def dominio_entregable(dominio: str) -> bool:
+    """¿El dominio puede recibir correo? Chequea MX; si no hay, cae a registro A.
+    Descarta NXDOMAIN y Null MX (la basura típica: esqueleto.com.ar, from.arch…).
+    Ante timeouts/errores de red NO descarta (le da el beneficio de la duda, para
+    no perder leads válidos por una consulta lenta)."""
+    dom = (dominio or "").strip().lower().rstrip(".")
+    if not dom or "." not in dom:
+        return False
+    if dom in _MX_CACHE:
+        return _MX_CACHE[dom]
+    ok = True
+    try:
+        import dns.resolver
+        res = dns.resolver.Resolver(configure=False)
+        # Resolvers públicos (Google + Cloudflare): no dependemos del DNS del host,
+        # que en algunas redes hace timeout en vez de devolver NXDOMAIN.
+        res.nameservers = ["8.8.8.8", "1.1.1.1", "8.8.4.4"]
+        res.lifetime = res.timeout = 6.0
+        try:
+            mx = res.resolve(dom, "MX")
+            # Null MX (RFC 7505): un único MX con host "." = el dominio no recibe mail.
+            hosts = [str(r.exchange).rstrip(".") for r in mx]
+            ok = not (len(hosts) == 1 and hosts[0] in ("", "."))
+        except dns.resolver.NoAnswer:
+            # Sin MX → algunos dominios reciben en el registro A.
+            try:
+                res.resolve(dom, "A"); ok = True
+            except Exception:
+                ok = False
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers):
+            ok = False   # dominio inexistente: basura típica de scraping
+    except Exception:
+        ok = True  # timeout / sin dnspython / red bloqueada: no descartar (no perder leads)
+    _MX_CACHE[dom] = ok
+    return ok
+
+
+def email_valido(email: str, chequear_mx: bool = True) -> bool:
+    """Plausibilidad (sintaxis/placeholder) + entregabilidad (MX/DNS)."""
+    if not es_email_plausible(email):
+        return False
+    if not chequear_mx:
+        return True
+    return dominio_entregable((email or "").rsplit("@", 1)[-1])
 
 
 def _mock(nicho, pais, cantidad):
@@ -164,7 +233,10 @@ def search_prospects(nicho, pais, cantidad, fuentes=("apify", "web"), search_ter
     vistos, unicos = set(), []
     for p in juntos:
         e = (p.get("email") or "").lower()
-        if e and e not in vistos:
-            vistos.add(e)
-            unicos.append(p)
+        if not e or e in vistos:
+            continue
+        vistos.add(e)
+        if not email_valido(e):      # placeholder/NXDOMAIN/Null MX → descartado antes de encolar
+            continue
+        unicos.append(p)
     return unicos[:cantidad]
