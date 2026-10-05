@@ -28,11 +28,16 @@ class SMTPSender(Sender):
     def _next_from(self):
         return next(self._cycle)
 
-    def send(self, to_email, to_name, subject, html, text) -> str:
+    def next_from(self):
+        return self._next_from()
+
+    def send(self, to_email, to_name, subject, html, text, from_override=None) -> str:
         if not (self.user and self.password):
             raise RuntimeError("SMTP no configurado: falta SMTP_USER / SMTP_PASS en .env")
 
-        from_email, from_name = self._next_from()   # rotación round-robin
+        # Si enviar_core ya eligió el remitente (para firmar con ese nombre), usarlo;
+        # si no, rotación round-robin como siempre.
+        from_email, from_name = from_override or self._next_from()
         msg_id = make_msgid(domain=from_email.split("@")[-1])
         if html:
             msg = MIMEMultipart("alternative")

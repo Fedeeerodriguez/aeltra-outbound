@@ -35,10 +35,15 @@ class GmailOAuthSender(Sender):
             self._service = build("gmail", "v1", credentials=creds, cache_discovery=False)
         return self._service
 
-    def send(self, to_email, to_name, subject, html, text) -> str:
+    def next_from(self):
+        return (self.sender_email, self.from_name)
+
+    def send(self, to_email, to_name, subject, html, text, from_override=None) -> str:
+        # Gmail envía siempre desde la cuenta autorizada; solo variamos el nombre visible.
+        from_name = (from_override[1] if from_override and from_override[1] else self.from_name)
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = formataddr((self.from_name, self.sender_email))
+        msg["From"] = formataddr((from_name, self.sender_email))
         msg["To"] = formataddr((to_name or "", to_email))
         msg_id = make_msgid(domain=self.sender_email.split("@")[-1])
         msg["Message-ID"] = msg_id

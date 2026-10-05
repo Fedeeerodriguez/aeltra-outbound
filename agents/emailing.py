@@ -36,7 +36,10 @@ def _footer_text(email: str) -> str:
 
 
 def render(asunto: str, cuerpo: str, nombre: str, email: str, variables: dict = None):
-    base = {"nombre": nombre or "", "email": email or ""}
+    base = {"nombre": nombre or "", "email": email or "",
+            # Defaults para que {{firma}}/{{remitente}} nunca queden literales si el
+            # que llama no los setea. enviar_core los sobrescribe con el remitente real.
+            "remitente": config.COMPANY_NAME, "firma": config.COMPANY_NAME}
     if variables:
         base.update(variables)
     subject = _merge(asunto, base).strip()
@@ -64,8 +67,24 @@ def enviar_core(email, nombre, asunto, cuerpo, variables=None, contacto_id=None)
     if pipeline.is_suppressed(email):
         return {"status": "skipped", "error": "en lista de supresión"}
     try:
+        snd = get_sender()
+        # Elegimos el remitente ANTES de renderizar, para que la firma del cuerpo
+        # coincida con quién envía (si sale de Sofía, firma Sofía).
+        from_email, from_name = (None, None)
+        try:
+            from_email, from_name = snd.next_from()
+        except Exception:
+            pass
+        remitente = (from_name or config.FROM_NAME or config.COMPANY_NAME).strip()
+        firma = (f"{remitente}\n{config.COMPANY_NAME}"
+                 if remitente and remitente.lower() != config.COMPANY_NAME.lower()
+                 else config.COMPANY_NAME)
+        variables = dict(variables or {})
+        variables.setdefault("remitente", remitente)
+        variables.setdefault("firma", firma)
         subject, html, text = render(asunto, cuerpo, nombre, email, variables)
-        msg_id = get_sender().send(email, nombre, subject, html, text)
+        from_override = (from_email, from_name) if from_email else None
+        msg_id = snd.send(email, nombre, subject, html, text, from_override=from_override)
         if contacto_id:
             pipeline.add_evento(contacto_id, "envio", {"asunto": subject})
         return {"status": "sent", "message_id": msg_id}
