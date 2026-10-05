@@ -226,7 +226,7 @@ canvas{max-width:100%}
     <div class="tabrow">
       <button class="tab on" data-v="resumen">Resumen</button>
       <button class="tab" data-v="alertas">Alertas <span class="cnt" id="t-alertas"></span></button>
-      <button class="tab" data-v="contactables">Contactables <span class="cnt" id="t-contactables"></span></button>
+      <button class="tab" data-v="contactables">Respuestas con teléfono <span class="cnt" id="t-contactables"></span></button>
       <button class="tab" data-v="seguimiento">Seguimiento</button>
       <button class="tab" data-v="campanias">Campañas</button>
       <button class="tab" data-v="analytics">Analytics</button>
@@ -268,7 +268,7 @@ canvas{max-width:100%}
 
   <!-- ===== CONTACTABLES ===== -->
   <section class="view" id="v-contactables">
-    <div class="vhead"><div><h2>Contactables</h2><p>Autorespondedores que dejaron teléfono o WhatsApp. No son respuestas de interés, pero sí una vía directa para contactarlos (ideal por WhatsApp).</p></div></div>
+    <div class="vhead"><div><h2>Respuestas con teléfono</h2><p>Personas que respondieron —aunque haya sido un mensaje automático— y nos dejaron un teléfono o WhatsApp. Las contactamos a mano por WhatsApp para enganchar bien.</p></div></div>
     <div id="contactables-list"><div class="muted">Cargando…</div></div>
   </section>
 
@@ -487,7 +487,7 @@ const _digs=s=>(s||'').replace(/\D/g,'');
 async function loadContactables(){ try{
   const r=await api('/api/contactables'); const box=$('contactables-list');
   const n=r.length; const badge=$('t-contactables'); if(badge)badge.textContent=n?('· '+n):'';
-  if(!n){ box.innerHTML='<div class="empty">Todavía no hay contactables. Cuando un autorespondedor deje un teléfono o WhatsApp, aparece acá.</div>'; return; }
+  if(!n){ box.innerHTML='<div class="empty">Todavía no hay respuestas con teléfono. Cuando alguien responda (aunque sea automático) y deje un número, aparece acá.</div>'; return; }
   box.innerHTML='<div class="grid2">'+r.map(c=>{
     const tels=(c.telefonos||[]).map(t=>{ const d=_digs(t);
       const wa=d.length>=10?`<a href="https://wa.me/${d}" target="_blank" rel="noopener" class="chip chip-apto" style="text-decoration:none">WhatsApp ${esc(t)}</a>`:'';

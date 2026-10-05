@@ -188,6 +188,13 @@ def _aplicar(frm, subj, get_raw):
         pipeline.cancel_pending_envios(c["id"])
         pipeline.add_evento(c["id"], "respuesta", {"asunto": (subj or "")[:200]})
         pipeline.log_agente("ejecutor", f"Respuesta de {frm}", (subj or "")[:200], True)
+        # Si la respuesta (humana) trae teléfono/WhatsApp, también va a "Respuestas
+        # con teléfono" para contactar a mano. (El plan: juntar todos los números.)
+        tels, es_wa = _extraer_telefonos(texto)
+        if tels and not pipeline.contacto_tiene_evento(c["id"], "auto_contacto"):
+            pipeline.add_evento(c["id"], "auto_contacto",
+                                {"telefonos": tels, "whatsapp": es_wa,
+                                 "asunto": (subj or "")[:200], "origen": "respuesta"})
         return "respuesta"
     return None
 
