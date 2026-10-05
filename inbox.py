@@ -86,7 +86,7 @@ _AUTORESP_RE = re.compile(
     r"vacation|de vacaciones|ausente", re.I)
 
 # Teléfonos: secuencias con +, paréntesis, espacios y guiones (7–15 dígitos).
-_TEL_RE = re.compile(r"(?<![\w.])(\+?\d[\d\s().\-]{6,}\d)(?![\w])")
+_TEL_RE = re.compile(r"(?<![\w.])(\(?\+?\d[\d\s().\-]{6,}\d)(?![\w])")
 _WA_RE = re.compile(r"whats\s*app|wsp|wpp|wa\.me", re.I)
 
 

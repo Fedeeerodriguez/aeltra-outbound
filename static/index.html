@@ -482,17 +482,29 @@ async function loadContactos(){ try{
   tb.innerHTML=r.slice(0,80).map(c=>`<tr class="click" data-id="${c.id}"><td>${esc(c.empresa||'—')}</td><td class="em">${esc(c.email||'')}</td><td>${esc(c.nicho||'')}</td><td>${chip(c.estado)}</td></tr>`).join('');
 }catch(e){ $('list-contactos').innerHTML='<tr><td colspan="4" class="muted">No se pudo cargar.</td></tr>'; } }
 
-/* ── Contactables: autorespondedores con teléfono/WhatsApp ── */
+/* ── Respuestas con teléfono: país se infiere del CÓDIGO del teléfono (el `pais`
+   guardado es poco confiable: las rutinas scrapean varios países y guardan AR). ── */
 const _digs=s=>(s||'').replace(/\D/g,'');
+// Códigos más largos primero para no confundir (598 antes que 59/5…).
+const _PAISES=[['598','Uruguay','🇺🇾'],['595','Paraguay','🇵🇾'],['593','Ecuador','🇪🇨'],
+  ['591','Bolivia','🇧🇴'],['57','Colombia','🇨🇴'],['56','Chile','🇨🇱'],['55','Brasil','🇧🇷'],
+  ['54','Argentina','🇦🇷'],['52','México','🇲🇽'],['51','Perú','🇵🇪'],['34','España','🇪🇸']];
+function _paisDeTels(tels){
+  for(const t of (tels||[])){ const d=_digs(t); if(d.length<10) continue;
+    for(const [code,nom,fl] of _PAISES){ if(d.startsWith(code)) return fl+' '+nom; } }
+  return null;   // sin código reconocible → no afirmamos país (mejor que uno incorrecto)
+}
+const _fmtTel=t=>(t||'').replace(/^(\+?\d{1,4})\)/,'($1)');   // restaura el "(" perdido
 async function loadContactables(){ try{
   const r=await api('/api/contactables'); const box=$('contactables-list');
   const n=r.length; const badge=$('t-contactables'); if(badge)badge.textContent=n?('· '+n):'';
   if(!n){ box.innerHTML='<div class="empty">Todavía no hay respuestas con teléfono. Cuando alguien responda (aunque sea automático) y deje un número, aparece acá.</div>'; return; }
   box.innerHTML='<div class="grid2">'+r.map(c=>{
-    const tels=(c.telefonos||[]).map(t=>{ const d=_digs(t);
-      const wa=d.length>=10?`<a href="https://wa.me/${d}" target="_blank" rel="noopener" class="chip chip-apto" style="text-decoration:none">WhatsApp ${esc(t)}</a>`:'';
-      const tel=`<a href="tel:${d}" class="chip chip-neutro" style="text-decoration:none">☎ ${esc(t)}</a>`;
+    const tels=(c.telefonos||[]).map(t=>{ const d=_digs(t); const label=esc(_fmtTel(t));
+      const wa=d.length>=10?`<a href="https://wa.me/${d}" target="_blank" rel="noopener" class="chip chip-apto" style="text-decoration:none">WhatsApp ${label}</a>`:'';
+      const tel=`<a href="tel:${d}" class="chip chip-neutro" style="text-decoration:none">☎ ${label}</a>`;
       return (c.whatsapp&&wa)?wa:tel; }).join(' ');
+    const pais=_paisDeTels(c.telefonos);
     return `<div class="card pad-sm">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
         <div style="min-width:0"><div style="font-weight:600">${esc(c.empresa||c.email||'—')}</div>
@@ -501,7 +513,7 @@ async function loadContactables(){ try{
       </div>
       <div style="margin:9px 0 10px;display:flex;flex-wrap:wrap;gap:6px">
         ${c.nicho?`<span class="chip chip-neutro">${esc(c.nicho)}</span>`:''}
-        ${c.pais?`<span class="chip chip-neutro">${esc(c.pais)}</span>`:''}</div>
+        ${pais?`<span class="chip chip-neutro">${pais}</span>`:''}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">${tels||'<span class="muted" style="font-size:12px">sin número</span>'}</div>
     </div>`;}).join('')+'</div>';
 }catch(e){ $('contactables-list').innerHTML='<div class="muted">No se pudo cargar.</div>'; } }
