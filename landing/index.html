@@ -152,6 +152,17 @@
   .card .ic{width:42px; height:42px; border-radius:11px; background:var(--grad); display:grid; place-items:center; color:#fff; margin-bottom:4px; box-shadow:0 6px 16px rgba(45,110,230,.28)}
   .card .ic svg{width:22px; height:22px}
 
+  /* casos / proyectos (la "galería de obras") */
+  .proj-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  @media(max-width:840px){ .proj-grid{grid-template-columns:1fr 1fr} }
+  @media(max-width:560px){ .proj-grid{grid-template-columns:1fr} }
+  .proj{background:var(--surface); border:1px solid var(--line); border-radius:15px; padding:24px; box-shadow:var(--shadow); position:relative; overflow:hidden; transition:transform .18s ease, border-color .18s ease}
+  .proj:hover{transform:translateY(-3px); border-color:color-mix(in srgb, var(--accent) 50%, var(--line))}
+  .proj::before{content:""; position:absolute; left:0; top:0; width:100%; height:3px; background:var(--grad); opacity:.9}
+  .proj .tag{font-family:var(--mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent-ink)}
+  .proj h3{font-size:19px; margin-top:10px; letter-spacing:-.01em}
+  .proj p{color:var(--muted); font-size:15px; margin-top:8px; line-height:1.55}
+
   /* proceso */
   .proceso{background:var(--surface); border-block:1px solid var(--line)}
   .steps{display:grid; grid-template-columns:repeat(4,1fr); gap:0}
@@ -258,6 +269,7 @@
     <nav class="nav-links">
       <a class="lnk" href="#nosotros">Nosotros</a>
       <a class="lnk" href="#que">Qué hacemos</a>
+      <a class="lnk" href="#casos">Casos</a>
       <a class="lnk" href="#como">Cómo lo hacemos</a>
       <a class="lnk" href="#nova">Nueva generación</a>
       <a class="nav-cta js-cta" href="#contacto">Agendá una llamada</a>
@@ -339,6 +351,49 @@
         <span class="tag">A medida</span>
         <h3>Software a medida</h3>
         <p>Cuando lo que necesitás no existe hecho, lo construimos a tu proceso: paneles, apps internas, portales que ordenan la operación y te ahorran horas. Tuyo, no un SaaS genérico que no te calza.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ CASOS / PROYECTOS ░░ -->
+<section id="casos">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Casos</span>
+      <h2>Lo que construimos.</h2>
+      <p>Software propio y desarrollos a medida, en producción y en distintos sectores. Cada proyecto montado sobre la operación real de cada negocio.</p>
+    </div>
+    <div class="proj-grid">
+      <article class="proj">
+        <span class="tag">Ventas B2B · producto propio</span>
+        <h3>Aeltra Outbound</h3>
+        <p>Nuestra máquina de prospección: agentes de IA que buscan empresas, escriben los correos y los envían paceados, con seguimiento automático y tablero en vivo.</p>
+      </article>
+      <article class="proj">
+        <span class="tag">E-commerce · producto propio</span>
+        <h3>Fluvo</h3>
+        <p>Agente de WhatsApp que atiende y recupera ventas 24/7 para tiendas online de LatAm, integrado al embudo de la marca.</p>
+      </article>
+      <article class="proj">
+        <span class="tag">Industria metalúrgica</span>
+        <h3>El Trébol</h3>
+        <p>Plataforma de fábrica y stock a medida: importa listas de materiales desde Excel y planos en PDF, y ordena la producción de la planta.</p>
+      </article>
+      <article class="proj">
+        <span class="tag">Inmobiliario</span>
+        <h3>Ciudad</h3>
+        <p>Plataforma de alquileres en vivo y CRM de ventas, con publicación y seguimiento de propiedades automatizados.</p>
+      </article>
+      <article class="proj">
+        <span class="tag">Recursos Humanos</span>
+        <h3>RRHHIA</h3>
+        <p>Filtro automático de candidatos con IA: puntúa postulantes por requisitos, suma una segunda lectura cualitativa y los ordena en un tablero, con agente de WhatsApp.</p>
+      </article>
+      <article class="proj">
+        <span class="tag">Sales Ops</span>
+        <h3>Salemetriq</h3>
+        <p>Telemetría de ventas: analiza las llamadas de los closers y los resúmenes de los setters y los convierte en métricas accionables para el equipo.</p>
       </article>
     </div>
   </div>
@@ -476,6 +531,7 @@
       <nav class="foot-links">
         <a href="#nosotros">Nosotros</a>
         <a href="#que">Qué hacemos</a>
+        <a href="#casos">Casos</a>
         <a href="#como">Cómo</a>
         <a href="#nova">Nueva generación</a>
         <a href="terminos.html">Términos y condiciones</a>
