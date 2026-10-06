@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Términos y Condiciones · Aeltra</title>
+<meta name="description" content="Términos y Condiciones de contratación de servicios de desarrollo de software a medida e inteligencia artificial operativa de Aeltra, conforme a la legislación argentina.">
+<meta name="robots" content="index, follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --g1:#38E6C0; --g2:#26B4E8; --g3:#3D63E8; --g4:#6B45F0;
+    --grad:linear-gradient(135deg, var(--g1), var(--g2) 38%, var(--g3) 68%, var(--g4));
+    --bg:#EEF1F6; --surface:#FFFFFF; --ink:#0E1526; --muted:#566076;
+    --line:#DCE1EB; --line-soft:#E7EBF2;
+    --accent:#2A6BE6; --accent-ink:#1E52C4; --accent-soft:#E6EDFC;
+    --hero-bg:#0A0E1A; --hero-ink:#EAEEF7; --hero-muted:#94A0BA; --hero-line:#1C2740; --hero-wm:#39C9F2;
+    --display:"Bricolage Grotesque","Hanken Grotesk",system-ui,sans-serif;
+    --body:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --maxw:820px;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --bg:#080B14; --surface:#0E1424; --ink:#E7ECF6; --muted:#9AA6BE; --line:#212B3F; --line-soft:#19212F;
+    --accent:#3D8BF0; --accent-ink:#5A9BF4; --accent-soft:#132039; --hero-bg:#070A13; --hero-line:#1A2338; } }
+  :root[data-theme="dark"]{
+    --bg:#080B14; --surface:#0E1424; --ink:#E7ECF6; --muted:#9AA6BE; --line:#212B3F; --line-soft:#19212F;
+    --accent:#3D8BF0; --accent-ink:#5A9BF4; --accent-soft:#132039; --hero-bg:#070A13; --hero-line:#1A2338; }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); font-size:16.5px; line-height:1.68; -webkit-font-smoothing:antialiased}
+  a{color:var(--accent-ink); text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding-inline:24px}
+  h1,h2,h3{font-family:var(--display); line-height:1.12; letter-spacing:-.02em; margin:0}
+
+  /* header */
+  header.nav{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--hero-bg) 88%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--hero-line)}
+  .nav-in{max-width:1120px; margin:0 auto; padding-inline:24px; display:flex; align-items:center; justify-content:space-between; height:62px}
+  .brand{display:flex; align-items:center; gap:10px; color:var(--hero-ink); font-family:var(--display); font-weight:800; font-size:20px; letter-spacing:-.02em}
+  .brand .t{color:var(--hero-wm)}
+  .logo{width:26px; height:26px}
+  .nav-back{color:var(--hero-muted); font-size:14.5px; font-weight:500}
+  .nav-back:hover{color:var(--hero-ink); text-decoration:none}
+
+  /* hero legal */
+  .doc-hero{background:var(--hero-bg); color:var(--hero-ink); border-bottom:1px solid var(--hero-line)}
+  .doc-hero .wrap{padding-block:56px 44px}
+  .doc-hero .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--hero-wm)}
+  .doc-hero h1{color:#fff; font-size:clamp(30px,6vw,46px); font-weight:800; margin-top:14px}
+  .doc-hero .meta{color:var(--hero-muted); font-family:var(--mono); font-size:13px; margin-top:16px}
+
+  /* aviso */
+  .aviso{background:var(--accent-soft); border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line)); border-radius:14px; padding:18px 20px; margin:34px 0; font-size:15px; color:var(--ink)}
+  .aviso b{color:var(--accent-ink)}
+
+  main{padding-block:14px 40px}
+  .toc{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin-bottom:40px}
+  .toc h2{font-size:14px; font-family:var(--mono); font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:12px}
+  .toc ol{margin:0; padding-left:22px; columns:2; column-gap:28px; font-size:15px}
+  @media(max-width:620px){ .toc ol{columns:1} }
+  .toc li{margin-bottom:6px; break-inside:avoid}
+
+  section.art{padding-block:14px; border-top:1px solid var(--line-soft)}
+  section.art:first-of-type{border-top:none}
+  h2.art-t{font-size:22px; margin-top:20px; scroll-margin-top:84px}
+  h2.art-t .num{color:var(--accent-ink); font-family:var(--mono); font-size:17px; margin-right:8px}
+  h3.sub{font-size:17px; margin-top:22px}
+  p{margin:14px 0}
+  ul.l{margin:12px 0; padding-left:22px}
+  ul.l li{margin-bottom:8px}
+  .ph{font-family:var(--mono); font-size:.92em; background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--accent-ink); padding:1px 6px; border-radius:5px}
+  .muted{color:var(--muted)}
+
+  footer{border-top:1px solid var(--line); padding-block:34px 44px; color:var(--muted); font-size:14px}
+  .foot-in{max-width:1120px; margin:0 auto; padding-inline:24px; display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; align-items:center}
+  .foot-links a{color:var(--muted); margin-left:18px} .foot-links a:hover{color:var(--ink)}
+  .foot-fine{max-width:1120px; margin:14px auto 0; padding-inline:24px; font-family:var(--mono); font-size:12px}
+  @media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="index.html" aria-label="Aeltra, inicio">
+      <svg class="logo" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs><linearGradient id="ag" x1="14" y1="4" x2="30" y2="36" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#3FE6C0"/><stop offset=".45" stop-color="#26B4E8"/><stop offset="1" stop-color="#6B45F0"/></linearGradient></defs>
+        <path d="M20 5.5 L34.5 32.5 A2.4 2.4 0 0 1 32.4 34.5 L7.6 34.5 A2.4 2.4 0 0 1 5.5 32.5 Z" stroke="url(#ag)" stroke-width="3.3" stroke-linejoin="round"/>
+        <path d="M13.6 24.2 H23.4" stroke="url(#ag)" stroke-width="3.3" stroke-linecap="round"/>
+      </svg>
+      <span>Ael<span class="t">tra</span></span>
+    </a>
+    <a class="nav-back" href="index.html">← Volver al inicio</a>
+  </div>
+</header>
+
+<div class="doc-hero">
+  <div class="wrap">
+    <span class="eyebrow">Legal</span>
+    <h1>Términos y Condiciones</h1>
+    <p class="meta">Última actualización: 5 de octubre de 2026 · Versión 1.0</p>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="aviso">
+    <b>Importante.</b> Este documento regula la contratación de servicios de desarrollo de software a medida e inteligencia artificial operativa prestados por Aeltra. Se rige por la legislación de la República Argentina. Antes de su publicación definitiva, se recomienda su revisión por un profesional del derecho y completar los datos entre corchetes <span class="ph">[ asi ]</span>.
+  </div>
+</div>
+
+<main>
+<div class="wrap">
+
+  <nav class="toc" aria-label="Índice">
+    <h2>Índice</h2>
+    <ol>
+      <li><a href="#s1">Identificación del prestador</a></li>
+      <li><a href="#s2">Objeto y definiciones</a></li>
+      <li><a href="#s3">Aceptación</a></li>
+      <li><a href="#s4">Contratación y alcance</a></li>
+      <li><a href="#s5">Precio, pago y facturación</a></li>
+      <li><a href="#s6">Plazos, entregables y colaboración</a></li>
+      <li><a href="#s7">Modificaciones del alcance</a></li>
+      <li><a href="#s8">Propiedad intelectual</a></li>
+      <li><a href="#s9">Garantía y vicios</a></li>
+      <li><a href="#s10">Servicios de inteligencia artificial</a></li>
+      <li><a href="#s11">Confidencialidad</a></li>
+      <li><a href="#s12">Protección de datos personales</a></li>
+      <li><a href="#s13">Limitación de responsabilidad</a></li>
+      <li><a href="#s14">Soporte y mantenimiento</a></li>
+      <li><a href="#s15">Rescisión</a></li>
+      <li><a href="#s16">Fuerza mayor</a></li>
+      <li><a href="#s17">Cesión y subcontratación</a></li>
+      <li><a href="#s18">Modificación de los términos</a></li>
+      <li><a href="#s19">Ley aplicable y jurisdicción</a></li>
+      <li><a href="#s20">Contacto</a></li>
+    </ol>
+  </nav>
+
+  <section class="art">
+    <h2 class="art-t" id="s1"><span class="num">1.</span>Identificación del prestador</h2>
+    <p>El presente sitio y los servicios aquí descriptos son operados por <b>Aeltra</b> (en adelante, «Aeltra», «nosotros» o «el Prestador»), con domicilio en <span class="ph">[DOMICILIO LEGAL]</span>, <span class="ph">[CIUDAD, PROVINCIA]</span>, República Argentina, CUIT <span class="ph">[CUIT]</span>, correo electrónico de contacto <a href="mailto:contacto@aeltra.company">contacto@aeltra.company</a> y sitio web <a href="https://aeltra.company">aeltra.company</a>.</p>
+    <p>La persona física o jurídica que contrata los servicios de Aeltra se denomina, en adelante, «el Cliente».</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s2"><span class="num">2.</span>Objeto y definiciones</h2>
+    <p>Estos Términos y Condiciones (los «Términos») regulan la relación entre Aeltra y el Cliente respecto de la prestación de servicios de <b>desarrollo de software a medida</b>, <b>automatización de procesos</b>, <b>integraciones</b> y <b>soluciones de inteligencia artificial operativa</b>, así como el uso de este sitio web.</p>
+    <p>A los fines de estos Términos:</p>
+    <ul class="l">
+      <li><b>Software a medida:</b> programas, agentes, scripts, paneles, aplicaciones y configuraciones desarrollados específicamente para el Cliente según la Propuesta acordada.</li>
+      <li><b>Entregables:</b> los resultados concretos del Servicio (código fuente, software en ejecución, documentación, configuraciones, etc.) definidos en la Propuesta.</li>
+      <li><b>Componentes preexistentes:</b> bibliotecas, frameworks, herramientas, plantillas, módulos y know-how de titularidad de Aeltra o de terceros, utilizados para construir los Entregables.</li>
+      <li><b>Propuesta:</b> el presupuesto, cotización, orden de trabajo o contrato particular suscripto entre las partes, que define alcance, plazos, precio y condiciones específicas.</li>
+    </ul>
+    <p>La naturaleza del vínculo se encuadra, según el caso, en el contrato de obra o de servicios previsto en el Código Civil y Comercial de la Nación (Ley 26.994, arts. 1251 y siguientes). En caso de conflicto entre estos Términos y la Propuesta particular, <b>prevalece la Propuesta</b>.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s3"><span class="num">3.</span>Aceptación</h2>
+    <p>La contratación de los Servicios, la aprobación de una Propuesta, el pago de la seña o anticipo, o el uso del sitio implican el conocimiento y la aceptación plena de estos Términos. La aceptación puede manifestarse por medios electrónicos, con los efectos reconocidos por la Ley 25.506 de Firma Digital y el Código Civil y Comercial. Si el Cliente no está de acuerdo con estos Términos, debe abstenerse de contratar los Servicios.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s4"><span class="num">4.</span>Contratación y alcance</h2>
+    <p>El Servicio se formaliza mediante la aceptación de una Propuesta que detalla el alcance, los Entregables, los plazos estimados y el precio. El alcance comprende únicamente lo expresamente indicado en la Propuesta; cualquier requerimiento no previsto se regirá por la cláusula 7 (Modificaciones del alcance).</p>
+    <p>Aeltra desarrolla la solución <b>sobre la operación real del Cliente</b>, adaptándose a sus procesos y herramientas existentes. El Cliente declara que la información y los accesos que proporciona son veraces y que cuenta con las facultades necesarias para contratar.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s5"><span class="num">5.</span>Precio, pago y facturación</h2>
+    <ul class="l">
+      <li>El precio, la moneda, la forma de pago y el cronograma se establecen en la Propuesta. Salvo indicación en contrario, los precios se expresan en <span class="ph">[MONEDA: pesos argentinos / dólares estadounidenses]</span>.</li>
+      <li>Salvo pacto distinto, el Servicio requiere el pago de un <b>anticipo o seña</b> para su inicio, y el saldo según los hitos acordados.</li>
+      <li>Aeltra emitirá los comprobantes fiscales que correspondan conforme a la normativa de la AFIP/ARCA. Los <b>impuestos, tasas y contribuciones</b> aplicables (p. ej. IVA, Ingresos Brutos) se adicionarán al precio cuando corresponda, de acuerdo con la condición fiscal de cada parte.</li>
+      <li>La mora en el pago se producirá de pleno derecho por el mero vencimiento del plazo, y podrá devengar los intereses previstos en la Propuesta o, en su defecto, los que fije la legislación aplicable. La falta de pago faculta a Aeltra a suspender la prestación y la entrega de Entregables.</li>
+    </ul>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s6"><span class="num">6.</span>Plazos, entregables y colaboración del Cliente</h2>
+    <p>Los plazos indicados en la Propuesta son <b>estimados</b> y dependen de la colaboración oportuna del Cliente. El Cliente se obliga a brindar, en tiempo y forma, la información, los accesos, las credenciales, los contenidos y las aprobaciones necesarias.</p>
+    <p>Las demoras imputables al Cliente (falta de respuesta, de accesos o de aprobaciones) suspenden los plazos y podrán generar costos adicionales. Los Entregables se considerarán <b>aprobados</b> si el Cliente no formula observaciones concretas dentro de los <span class="ph">[N]</span> días hábiles de su puesta a disposición.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s7"><span class="num">7.</span>Modificaciones del alcance</h2>
+    <p>Todo requerimiento que exceda el alcance de la Propuesta (nuevas funcionalidades, cambios sustanciales, integraciones no previstas) constituye una <b>modificación de alcance</b> y será presupuestado por separado, pudiendo afectar plazos y precio. Ninguna modificación es exigible sin acuerdo previo y por escrito (incluye medios electrónicos) de ambas partes.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s8"><span class="num">8.</span>Propiedad intelectual</h2>
+    <p>El software goza de protección como obra bajo la Ley 11.723 de Propiedad Intelectual (con la incorporación del software por la Ley 25.036).</p>
+    <ul class="l">
+      <li><b>Entregables a medida:</b> una vez <b>cancelado íntegramente el precio</b>, Aeltra transfiere al Cliente los derechos patrimoniales sobre los desarrollos específicos creados exclusivamente para él, en los términos y con el alcance que fije la Propuesta (cesión o licencia). Hasta tanto se cancele el precio, Aeltra conserva la titularidad de dichos Entregables.</li>
+      <li><b>Componentes preexistentes y know-how:</b> continúan siendo de titularidad exclusiva de Aeltra o de sus licenciantes. Sobre ellos, el Cliente recibe una <b>licencia de uso</b> no exclusiva, intransferible y limitada a la finalidad del Servicio. Aeltra conserva el derecho de reutilizar su know-how, técnicas, herramientas y componentes genéricos en otros proyectos.</li>
+      <li><b>Software de terceros:</b> el uso de componentes de terceros (incluido software libre o de código abierto) se rige por sus respectivas licencias, que el Cliente se obliga a respetar.</li>
+      <li><b>Derechos morales:</b> se reconocen los derechos morales de autor conforme a la ley aplicable.</li>
+    </ul>
+    <p>Salvo pacto en contrario, el Cliente no adquiere exclusividad sobre ideas, métodos, arquitecturas o soluciones de carácter genérico.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s9"><span class="num">9.</span>Garantía y vicios</h2>
+    <p>Aeltra garantiza que los Entregables funcionarán sustancialmente conforme a lo especificado en la Propuesta. Durante un plazo de <span class="ph">[N]</span> días corridos desde la aprobación o puesta en producción, Aeltra corregirá <b>sin cargo</b> los defectos que impidan el funcionamiento conforme a dichas especificaciones (garantía por vicios o defectos).</p>
+    <p>La garantía <b>no cubre</b>: (i) fallas derivadas de modificaciones realizadas por el Cliente o por terceros; (ii) uso indebido, fuera de las condiciones acordadas o en entornos no soportados; (iii) fallas de servicios, plataformas, APIs o infraestructura de terceros; (iv) datos erróneos o incompletos provistos por el Cliente; (v) nuevas funcionalidades o cambios de alcance. Fuera del plazo de garantía, las correcciones y mejoras se facturan como soporte (cláusula 14).</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s10"><span class="num">10.</span>Servicios de inteligencia artificial</h2>
+    <p>Las soluciones de IA operativa procesan información y ejecutan tareas de manera automatizada. El Cliente reconoce y acepta que:</p>
+    <ul class="l">
+      <li>Los sistemas de IA pueden producir resultados <b>probabilísticos</b> y no están exentos de errores; no sustituyen el criterio profesional ni la supervisión humana cuando ésta sea necesaria.</li>
+      <li>Aeltra <b>no garantiza resultados comerciales específicos</b> (p. ej. una determinada cantidad de ventas, respuestas o conversiones), ya que dependen de múltiples factores ajenos a su control.</li>
+      <li>El Cliente es responsable del uso que haga de los sistemas y de su cumplimiento de la normativa aplicable a su actividad, incluyendo —cuando corresponda— las normas sobre comunicaciones comerciales, protección de datos y propiedad intelectual de los contenidos que aporte.</li>
+      <li>Cuando se utilicen servicios de terceros (modelos, APIs o proveedores de infraestructura), su uso queda sujeto a las condiciones de dichos terceros.</li>
+    </ul>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s11"><span class="num">11.</span>Confidencialidad</h2>
+    <p>Cada parte se obliga a mantener la confidencialidad de la información no pública a la que acceda con motivo de la relación (información técnica, comercial, datos de clientes, código, credenciales), y a utilizarla exclusivamente para la ejecución del Servicio. Esta obligación subsiste por <span class="ph">[N]</span> años posteriores a la finalización de la relación. Quedan exceptuadas la información de dominio público, la que deba revelarse por orden de autoridad competente y la que la parte ya conociera legítimamente.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s12"><span class="num">12.</span>Protección de datos personales</h2>
+    <p>El tratamiento de datos personales se realiza conforme a la Ley 25.326 de Protección de los Datos Personales y su reglamentación. Cuando Aeltra trate datos personales por cuenta del Cliente, lo hará en calidad de <b>encargado de tratamiento</b>, únicamente siguiendo las instrucciones del Cliente y para los fines del Servicio, aplicando medidas de seguridad razonables y sin cederlos a terceros salvo obligación legal o instrucción del Cliente.</p>
+    <p>El Cliente, en su carácter de responsable de la base de datos, garantiza contar con base legal suficiente para el tratamiento y para encomendarlo a Aeltra. Los titulares de los datos podrán ejercer sus derechos de acceso, rectificación, actualización y supresión conforme a la ley. La autoridad de control en la materia es la Agencia de Acceso a la Información Pública.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s13"><span class="num">13.</span>Limitación de responsabilidad</h2>
+    <p>Aeltra responde por los daños directos efectivamente probados que sean consecuencia inmediata de su incumplimiento. En la máxima medida permitida por la ley, Aeltra <b>no responde</b> por daños indirectos, lucro cesante, pérdida de chance, pérdida de datos o perjuicios derivados de servicios de terceros o de hechos ajenos a su control.</p>
+    <p>Salvo dolo, la responsabilidad total y acumulada de Aeltra por cualquier reclamo vinculado al Servicio no excederá el <b>monto efectivamente abonado por el Cliente</b> por el Servicio que originó el reclamo en los <span class="ph">[N]</span> meses anteriores. Nada en estos Términos limita responsabilidades que por ley no puedan excluirse.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s14"><span class="num">14.</span>Soporte y mantenimiento</h2>
+    <p>El soporte posterior al plazo de garantía, el mantenimiento evolutivo, las mejoras y la operación continua <b>no están incluidos</b> salvo pacto expreso, y se contratan por separado mediante una Propuesta o acuerdo de servicios específico, con sus propias condiciones y precios.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s15"><span class="num">15.</span>Rescisión</h2>
+    <p>Cualquiera de las partes podrá resolver la relación ante el incumplimiento grave de la otra que no sea subsanado dentro de los <span class="ph">[N]</span> días de intimada fehacientemente. En caso de resolución, el Cliente abonará las tareas efectivamente realizadas y los gastos comprometidos hasta la fecha. Las cláusulas que por su naturaleza deban subsistir (propiedad intelectual, confidencialidad, limitación de responsabilidad, ley y jurisdicción) continuarán vigentes tras la finalización.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s16"><span class="num">16.</span>Fuerza mayor</h2>
+    <p>Ninguna parte será responsable por el incumplimiento causado por caso fortuito o fuerza mayor en los términos del Código Civil y Comercial (hechos imprevisibles o inevitables ajenos a su voluntad, incluyendo fallas generalizadas de internet, de proveedores de infraestructura, cortes de energía, medidas de gobierno o catástrofes).</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s17"><span class="num">17.</span>Cesión y subcontratación</h2>
+    <p>El Cliente no podrá ceder su posición contractual sin conformidad previa de Aeltra. Aeltra podrá valerse de colaboradores o subcontratistas para la ejecución del Servicio, manteniendo su responsabilidad frente al Cliente y las obligaciones de confidencialidad.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s18"><span class="num">18.</span>Modificación de los términos</h2>
+    <p>Aeltra podrá actualizar estos Términos. La versión vigente será la publicada en este sitio, con su fecha de última actualización. Las modificaciones no afectan a los contratos ya perfeccionados, que se rigen por los Términos vigentes al momento de su aceptación, salvo acuerdo en contrario.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s19"><span class="num">19.</span>Ley aplicable y jurisdicción</h2>
+    <p>Estos Términos se rigen por las leyes de la <b>República Argentina</b>. Para toda controversia derivada de su interpretación o ejecución, las partes se someten a la jurisdicción de los <b>tribunales ordinarios de <span class="ph">[CIUDAD / PROVINCIA o CABA]</span></b>, con renuncia a cualquier otro fuero o jurisdicción que pudiera corresponder. Las partes procurarán resolver amistosamente cualquier diferencia antes de recurrir a la vía judicial.</p>
+  </section>
+
+  <section class="art">
+    <h2 class="art-t" id="s20"><span class="num">20.</span>Contacto</h2>
+    <p>Por cualquier consulta relativa a estos Términos, podés escribir a <a href="mailto:contacto@aeltra.company">contacto@aeltra.company</a>.</p>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-in">
+    <span>Aeltra · Software &amp; IA operativa a medida</span>
+    <nav class="foot-links">
+      <a href="index.html">Inicio</a>
+      <a href="index.html#nosotros">Nosotros</a>
+      <a href="mailto:contacto@aeltra.company">Contacto</a>
+    </nav>
+  </div>
+  <p class="foot-fine">© <span id="yr">2026</span> Aeltra. Todos los derechos reservados. La tecnología se adapta a vos.</p>
+</footer>
+
+<script>try{document.getElementById('yr').textContent=new Date().getFullYear();}catch(e){}</script>
+</body>
+</html>
