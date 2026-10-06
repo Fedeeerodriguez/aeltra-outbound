@@ -108,7 +108,8 @@
     background-image:linear-gradient(var(--hero-line) 1px, transparent 1px), linear-gradient(90deg, var(--hero-line) 1px, transparent 1px);
     background-size:64px 64px; -webkit-mask-image:radial-gradient(1000px 560px at 72% 0%, #000, transparent 72%);
     mask-image:radial-gradient(1000px 560px at 72% 0%, #000, transparent 72%)}
-  .hero-in{position:relative; padding-block:76px 90px; max-width:860px}
+  .hero-in{position:relative; padding-block:76px 84px}
+  .hero-copy{max-width:760px}
   .hero .eyebrow{color:var(--hero-wm)}
   .hero h1{color:var(--hero-ink); font-size:clamp(38px,7vw,70px); font-weight:800; margin-top:20px}
   .hero h1 .mark{position:relative; white-space:nowrap; color:#fff}
@@ -120,6 +121,19 @@
   .hero-meta{display:flex; flex-wrap:wrap; gap:10px 26px; margin-top:40px; color:var(--hero-muted); font-family:var(--mono); font-size:13px}
   .hero-meta span{display:inline-flex; align-items:center; gap:8px}
   .dot{width:7px; height:7px; border-radius:50%; background:var(--grad)}
+  /* trust stats (estilo Briones) */
+  .hero-trust{display:flex; flex-wrap:wrap; gap:16px 40px; margin-top:34px}
+  .hero-trust .st{display:flex; flex-direction:column}
+  .hero-trust .n{font-family:var(--display); font-weight:800; font-size:clamp(28px,4vw,36px); line-height:1; color:#fff}
+  .hero-trust .l{font-size:12.5px; color:var(--hero-muted); margin-top:7px; max-width:150px; line-height:1.3; text-transform:uppercase; letter-spacing:.04em}
+  /* producto en marco de navegador (la "foto de la obra") */
+  .hero-figure{margin-top:50px; position:relative}
+  .browser{background:var(--surface); border:1px solid rgba(255,255,255,.14); border-radius:14px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.55)}
+  .browser .bar{display:flex; align-items:center; gap:7px; padding:11px 15px; background:#0E1626; border-bottom:1px solid rgba(255,255,255,.07)}
+  .browser .bar i{width:11px; height:11px; border-radius:50%; background:#2B3A55}
+  .browser .bar .u{margin-left:12px; font-family:var(--mono); font-size:12px; color:#6B7A99}
+  .browser .shot{display:block; width:100%; height:auto; background:#FBFBFA}
+  .hero-figure .cap{margin-top:13px; font-family:var(--mono); font-size:12px; color:var(--hero-muted); text-align:center}
 
   /* section shell */
   section{padding-block:88px}
@@ -281,17 +295,26 @@
 <div id="top" class="hero">
   <div class="hero-grid" aria-hidden="true"></div>
   <div class="wrap hero-in">
-    <span class="eyebrow">Software &amp; IA operativa · a medida</span>
-    <h1>Convertí tu empresa en una de <span class="mark">nueva generación</span>.</h1>
-    <p class="hero-sub">Aeltra implementa inteligencia artificial operativa a medida, montada sobre tu operación real. No te mudamos a un sistema nuevo: tomamos tu empresa tal como trabaja hoy y la potenciamos. La tecnología se adapta a vos, no al revés.</p>
-    <div class="hero-cta">
-      <a class="btn btn-primary btn-lg js-cta" href="#contacto">Agendá una llamada <span class="arrow">→</span></a>
-      <a class="btn hero-ghost btn-lg" href="#que">Ver qué hacemos</a>
+    <div class="hero-copy">
+      <span class="eyebrow">Software &amp; IA operativa · a medida</span>
+      <h1>Convertí tu empresa en una de <span class="mark">nueva generación</span>.</h1>
+      <p class="hero-sub">Aeltra implementa inteligencia artificial operativa a medida, montada sobre tu operación real. No te mudamos a un sistema nuevo: tomamos tu empresa tal como trabaja hoy y la potenciamos. La tecnología se adapta a vos, no al revés.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg js-cta" href="#contacto">Agendá una llamada <span class="arrow">→</span></a>
+        <a class="btn hero-ghost btn-lg" href="#casos">Ver casos</a>
+      </div>
+      <div class="hero-trust">
+        <div class="st"><span class="n">6</span><span class="l">Proyectos en producción</span></div>
+        <div class="st"><span class="n">4</span><span class="l">Sectores</span></div>
+        <div class="st"><span class="n">2</span><span class="l">Productos propios</span></div>
+      </div>
     </div>
-    <div class="hero-meta">
-      <span><i class="dot"></i> IA operativa a medida</span>
-      <span><i class="dot"></i> Se adapta a tu operación</span>
-      <span><i class="dot"></i> Mínimo cambio, máximo impacto</span>
+    <div class="hero-figure">
+      <div class="browser">
+        <div class="bar"><i></i><i></i><i></i><span class="u">panel.aeltra.company</span></div>
+        <img class="shot" src="img/panel-aeltra.png" alt="Panel de Aeltra Outbound con métricas en vivo: enviados, entrega, contactos y campañas" width="2384" height="462" loading="eager">
+      </div>
+      <div class="cap">Un panel real de Aeltra: nuestra máquina de outbound con IA, en vivo.</div>
     </div>
   </div>
 </div>
