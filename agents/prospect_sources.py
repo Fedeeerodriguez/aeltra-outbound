@@ -218,6 +218,87 @@ def google_places(nicho, pais, cantidad):
         return []
 
 
+def _mock_negocios_rich(nicho, search_terms, cantidad):
+    """Negocios sintéticos CON reseñas/rating/web para probar el Auditor en seco
+    (PROSPECTS_MOCK=true). Incluye casos con quejas, sin web y con WhatsApp, para que
+    el scoring se vea funcionando sin gastar Apify."""
+    quejas = [
+        "Llamé tres veces y nunca me respondieron. Pésima atención.",
+        "Mandé mensaje por la propiedad y nunca me contestaron.",
+        "Imposible comunicarse, no atienden el teléfono.",
+        "Pedí un turno y me dejaron en visto, nunca me dieron respuesta.",
+    ]
+    buenas = ["Excelente atención, muy rápidos.", "Me respondieron al toque, recomendables."]
+    zona = (search_terms[0] if search_terms else "Argentina")
+    out = []
+    for i in range(cantidad):
+        caso = i % 4
+        tiene_web = caso in (0, 2)
+        con_queja = caso in (0, 1, 3)
+        reviews = [{"text": quejas[i % len(quejas)]}] if con_queja else [{"text": buenas[i % len(buenas)]}]
+        if caso == 2:
+            reviews += [{"text": buenas[0]}]
+        out.append({
+            "empresa": f"{nicho.capitalize()} {['Norte','Sur','Centro','Express'][caso]} {i+1}",
+            "nombre": "",
+            "website": (f"https://{nicho.replace(' ','')}{i}.com.ar" if tiene_web else ""),
+            "telefono": f"+54 9 11 5{random.randint(100,999)}-{random.randint(1000,9999)}",
+            "email": (f"info@{nicho.replace(' ','')}{i}.com.ar" if tiene_web and caso == 0 else ""),
+            "rating": round(random.uniform(3.2, 4.9), 1),
+            "reviews_count": random.randint(0, 180),
+            "reviews": reviews,
+            "categoria": nicho, "direccion": zona, "maps_url": "",
+            "nicho": nicho, "pais": zona, "fuente": "apify-rich-mock",
+        })
+    return out
+
+
+def buscar_negocios_rich(nicho, search_terms, cantidad, max_reviews=6):
+    """Trae negocios de Google Maps CON datos ricos (reseñas, rating, web, teléfono) para
+    el Auditor. No filtra por email: el mystery shopper contacta por WhatsApp/teléfono.
+    Cae a mock si PROSPECTS_MOCK o sin token."""
+    if config.PROSPECTS_MOCK or not config.APIFY_TOKEN:
+        return _mock_negocios_rich(nicho, search_terms, cantidad)
+    try:
+        actor = "compass~crawler-google-places"
+        url = f"https://api.apify.com/v2/acts/{actor}/run-sync-get-dataset-items?token={config.APIFY_TOKEN}"
+        terms = list(search_terms) if search_terms else [f"{nicho} Argentina"]
+        payload = {
+            "searchStringsArray": terms,
+            "maxCrawledPlaces": cantidad,
+            "language": "es",
+            "maxReviews": max_reviews,
+            "reviewsSort": "newest",
+            "scrapeReviewsPersonalData": False,
+        }
+        r = httpx.post(url, json=payload, timeout=300)
+        r.raise_for_status()
+        out = []
+        for it in r.json():
+            emails = it.get("emails") or []
+            reviews = []
+            for rv in (it.get("reviews") or [])[:max_reviews]:
+                txt = (rv.get("text") or rv.get("reviewText") or "") if isinstance(rv, dict) else str(rv)
+                if txt:
+                    reviews.append({"text": txt})
+            out.append({
+                "empresa": it.get("title", ""), "nombre": "",
+                "website": it.get("website") or "",
+                "telefono": it.get("phone") or it.get("phoneUnformatted") or "",
+                "email": emails[0] if emails else "",
+                "rating": it.get("totalScore"),
+                "reviews_count": it.get("reviewsCount") or 0,
+                "reviews": reviews,
+                "categoria": it.get("categoryName") or nicho,
+                "direccion": it.get("address") or "",
+                "maps_url": it.get("url") or "",
+                "nicho": nicho, "pais": (terms[0] if terms else "Argentina"), "fuente": "apify-rich",
+            })
+        return out
+    except Exception:
+        return []
+
+
 def search_prospects(nicho, pais, cantidad, fuentes=("apify", "web"), search_terms=None):
     """Combina fuentes, deduplica por email y devuelve hasta `cantidad`.
     search_terms: rotación geográfica (multi-ciudad/país) que se pasa a Apify."""

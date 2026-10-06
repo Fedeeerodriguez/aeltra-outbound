@@ -437,6 +437,67 @@ def api_contactables():
     return out
 
 
+# ── Prospección con evidencia (mystery shopper) ──
+class CorrerAuditoriaReq(BaseModel):
+    nicho: str
+    cantidad: int = 30
+    zonas_por_corrida: int = 4
+    chequear_web: bool = True
+
+class PromoverReq(BaseModel):
+    nicho: str
+    min_score: int = 60
+    cantidad: int = 20
+
+
+@app.get("/api/nichos-catalogo")
+def api_nichos_catalogo():
+    """Catálogo de nichos disponibles para la máquina de prospección (con su dolor)."""
+    import nichos
+    return nichos.listar()
+
+
+@app.get("/api/auditoria")
+def api_auditoria(nivel: str = "", nicho: str = "", limit: int = 500):
+    """Negocios auditados (mystery shopper), ordenados por score de falla desc."""
+    return pipeline.negocios_auditados(nivel or None, nicho or None, limit)
+
+
+@app.get("/api/auditoria/resumen")
+def api_auditoria_resumen():
+    return pipeline.resumen_auditoria()
+
+
+@app.post("/api/prospeccion/correr")
+async def api_prospeccion_correr(req: CorrerAuditoriaReq):
+    """Dispara una corrida de auditoría (busca + audita, NO envía). Puede tardar."""
+    import prospeccion
+    return await run_in_threadpool(
+        prospeccion.correr_auditoria, req.nicho, None, int(req.cantidad),
+        int(req.zonas_por_corrida), bool(req.chequear_web))
+
+
+@app.post("/api/prospeccion/promover")
+async def api_prospeccion_promover(req: PromoverReq):
+    """Promueve los auditados de score alto (con email real) a la secuencia de mails del nicho."""
+    import prospeccion
+    return await run_in_threadpool(
+        prospeccion.promover_a_campania, req.nicho, int(req.min_score), int(req.cantidad))
+
+
+@app.get("/api/autoanalisis")
+def api_autoanalisis():
+    """Último informe de autoanálisis (o lo calcula si no hay)."""
+    import autoanalisis
+    return autoanalisis.ultimo_informe() or autoanalisis.analizar()
+
+
+@app.post("/api/autoanalisis/correr")
+async def api_autoanalisis_correr():
+    import autoanalisis
+    return await run_in_threadpool(autoanalisis.analizar)
+
+
 # ── Pipeline (estados de cliente) ──
 class MoverReq(BaseModel):
     id: int

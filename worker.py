@@ -60,9 +60,16 @@ def process_once(limit=10) -> int:
             pipeline.mark_envio(e["id"], "failed", error="falta plantilla/contacto")
             continue
         activity.update("ejecutor", "trabajando", f"Enviando a {c['email']}…")
+        # Evidencia de la auditoría (si el contacto fue auditado). Si no hay, queda "" y
+        # el copy se lee igual (el placeholder {{bloque_evidencia}} desaparece).
+        try:
+            bloque = pipeline.evidencia_contacto(c["id"])
+        except Exception:
+            bloque = ""
         res = enviar_core(
             c["email"], c.get("nombre"), pl["asunto"], pl["cuerpo"],
-            variables={"empresa": c.get("empresa")}, contacto_id=c["id"],
+            variables={"empresa": c.get("empresa"), "bloque_evidencia": bloque},
+            contacto_id=c["id"],
         )
         pipeline.mark_envio(e["id"], res["status"], res.get("message_id"), res.get("error"))
         if res["status"] == "sent":

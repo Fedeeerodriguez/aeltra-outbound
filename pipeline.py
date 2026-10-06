@@ -180,6 +180,95 @@ def contactables():
     conn.close()
     return [dict(r) for r in rows]
 
+# ── Auditoría (mystery shopper) ──
+def guardar_auditoria(negocio, audit, nicho, zona):
+    """Guarda un negocio auditado como contacto (estado 'auditado' → NO entra a los
+    envíos automáticos) + un evento 'auditoria' con el resultado. Idempotente: si el
+    negocio ya estaba auditado, reemplaza el evento por el más nuevo.
+    Devuelve el contacto_id."""
+    import hashlib
+    email = (negocio.get("email") or "").strip().lower()
+    sintetico = False
+    if not email or "@" not in email:
+        base = (negocio.get("maps_url")
+                or (negocio.get("empresa", "") + "|" + negocio.get("direccion", ""))).encode("utf-8")
+        email = f"audit-{hashlib.sha1(base).hexdigest()[:12]}@sin-email.aeltra"
+        sintetico = True
+    # estado 'auditado' para TODOS: el auditor nunca manda mails; se promueve aparte.
+    cid = add_contact(negocio.get("empresa") or "", email, negocio.get("empresa"),
+                      nicho, zona, "auditoria", "auditado")
+    if not cid:
+        return None
+    payload = dict(audit)
+    payload.update({"empresa": negocio.get("empresa") or "", "sintetico": sintetico,
+                    "nicho": nicho, "zona": zona, "email": email,
+                    "telefono": negocio.get("telefono") or audit.get("telefono") or ""})
+    conn = get_conn()
+    conn.execute("DELETE FROM eventos WHERE contacto_id=? AND tipo='auditoria'", (cid,))
+    conn.execute("INSERT INTO eventos (contacto_id,tipo,payload) VALUES (?,?,?)",
+                 (cid, "auditoria", json.dumps(payload, ensure_ascii=False)))
+    conn.commit()
+    conn.close()
+    return cid
+
+
+def negocios_auditados(nivel=None, nicho=None, limit=500):
+    """Negocios auditados (último resultado por contacto), ordenados por score desc."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT c.id, c.empresa, c.email, c.nicho, c.pais, c.estado, e.payload, e.created_at "
+        "FROM eventos e JOIN contactos c ON c.id = e.contacto_id "
+        "WHERE e.tipo='auditoria' "
+        "AND e.id IN (SELECT MAX(id) FROM eventos WHERE tipo='auditoria' GROUP BY contacto_id) "
+        "ORDER BY e.id DESC LIMIT ?", (limit,)).fetchall()
+    conn.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["auditoria"] = json.loads(d.pop("payload") or "{}")
+        except Exception:
+            d["auditoria"] = {}
+        if nivel and d["auditoria"].get("nivel") != nivel:
+            continue
+        if nicho and (d.get("nicho") or "") != nicho:
+            continue
+        out.append(d)
+    out.sort(key=lambda x: x["auditoria"].get("score", 0), reverse=True)
+    return out
+
+
+def evidencia_contacto(cid):
+    """Bloque de evidencia (texto para el mail) de la última auditoría del contacto, o ''."""
+    conn = get_conn()
+    r = conn.execute("SELECT payload FROM eventos WHERE contacto_id=? AND tipo='auditoria' "
+                     "ORDER BY id DESC LIMIT 1", (cid,)).fetchone()
+    conn.close()
+    if not r:
+        return ""
+    try:
+        return (json.loads(r["payload"] or "{}") or {}).get("bloque_evidencia", "") or ""
+    except Exception:
+        return ""
+
+
+def resumen_auditoria():
+    """Conteos por nivel y por nicho para el panel."""
+    negocios = negocios_auditados(limit=5000)
+    por_nivel = {"alto": 0, "medio": 0, "bajo": 0}
+    por_nicho = {}
+    con_tel = 0
+    for n in negocios:
+        a = n.get("auditoria", {})
+        por_nivel[a.get("nivel", "bajo")] = por_nivel.get(a.get("nivel", "bajo"), 0) + 1
+        nk = n.get("nicho") or "—"
+        por_nicho[nk] = por_nicho.get(nk, 0) + 1
+        if a.get("telefono"):
+            con_tel += 1
+    return {"total": len(negocios), "por_nivel": por_nivel, "por_nicho": por_nicho,
+            "con_telefono": con_tel}
+
+
 # ── Métricas ──
 def stats():
     conn = get_conn()

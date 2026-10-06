@@ -227,6 +227,7 @@ canvas{max-width:100%}
       <button class="tab on" data-v="resumen">Resumen</button>
       <button class="tab" data-v="alertas">Alertas <span class="cnt" id="t-alertas"></span></button>
       <button class="tab" data-v="contactables">Respuestas con teléfono <span class="cnt" id="t-contactables"></span></button>
+      <button class="tab" data-v="prospeccion">Prospección <span class="cnt" id="t-prospeccion"></span></button>
       <button class="tab" data-v="seguimiento">Seguimiento</button>
       <button class="tab" data-v="campanias">Campañas</button>
       <button class="tab" data-v="analytics">Analytics</button>
@@ -270,6 +271,34 @@ canvas{max-width:100%}
   <section class="view" id="v-contactables">
     <div class="vhead"><div><h2>Respuestas con teléfono</h2><p>Personas que respondieron —aunque haya sido un mensaje automático— y nos dejaron un teléfono o WhatsApp. Las contactamos a mano por WhatsApp para enganchar bien.</p></div></div>
     <div id="contactables-list"><div class="muted">Cargando…</div></div>
+  </section>
+
+  <!-- ===== PROSPECCIÓN (mystery shopper) ===== -->
+  <section class="view" id="v-prospeccion">
+    <div class="vhead"><div><h2>Prospección con evidencia</h2><p>Negocios auditados por la máquina: puntúa su “falla” (demoras en responder, sin WhatsApp/chat, mal rating) con datos públicos de Google. No les escribe nadie: a los de falla alta los contactás vos por WhatsApp con su propia evidencia.</p></div></div>
+    <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi"><div class="k">Auditados</div><div class="v tabular" id="au-total">—</div><div class="sub">negocios</div></div>
+      <div class="kpi good"><div class="k">Falla alta</div><div class="v tabular" id="au-alto">—</div><div class="sub">para contactar ya</div></div>
+      <div class="kpi"><div class="k">Falla media</div><div class="v tabular" id="au-medio">—</div><div class="sub">segunda prioridad</div></div>
+      <div class="kpi"><div class="k">Con teléfono</div><div class="v tabular" id="au-tel">—</div><div class="sub">contactables</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-t">Recomendaciones de la máquina (autoanálisis)</div>
+      <div id="au-reco"><div class="muted">Cargando…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-t">Negocios auditados — ordenados por falla</div>
+      <div class="filtros" style="margin-bottom:14px">
+        <select id="au-nivel" class="inp" style="max-width:200px">
+          <option value="">Todos los niveles</option>
+          <option value="alto">Falla alta</option>
+          <option value="medio">Falla media</option>
+          <option value="bajo">Falla baja</option>
+        </select>
+        <select id="au-nicho" class="inp" style="max-width:220px"><option value="">Todos los nichos</option></select>
+      </div>
+      <div id="au-list"><div class="muted">Cargando…</div></div>
+    </div>
   </section>
 
   <!-- ===== SEGUIMIENTO ===== -->
@@ -367,6 +396,7 @@ tabs.forEach(t=>t.addEventListener('click',()=>{
   if(v==='analytics')loadMetricas();
   if(v==='alertas')computeAlertas();
   if(v==='contactables')loadContactables();
+  if(v==='prospeccion')loadProspeccion();
 }));
 
 /* ── Mapas de estado ── */
@@ -517,6 +547,55 @@ async function loadContactables(){ try{
       <div style="display:flex;flex-wrap:wrap;gap:6px">${tels||'<span class="muted" style="font-size:12px">sin número</span>'}</div>
     </div>`;}).join('')+'</div>';
 }catch(e){ $('contactables-list').innerHTML='<div class="muted">No se pudo cargar.</div>'; } }
+
+/* ── Prospección (mystery shopper): auditados rankeados + recomendaciones ── */
+const NIVEL_CHIP={alto:'fuera',medio:'alerta',bajo:'neutro'};
+const NIVEL_TXT={alto:'Falla alta',medio:'Falla media',bajo:'Falla baja'};
+let _auNichosLoaded=false;
+async function loadProspeccion(){
+  // Resumen + badge
+  try{
+    const s=await api('/api/auditoria/resumen'); const pv=s.por_nivel||{};
+    $('au-total').textContent=s.total||0; $('au-alto').textContent=pv.alto||0;
+    $('au-medio').textContent=pv.medio||0; $('au-tel').textContent=s.con_telefono||0;
+    const badge=$('t-prospeccion'); if(badge)badge.textContent=(pv.alto? '· '+pv.alto : '');
+    // llenar filtro de nichos una vez
+    if(!_auNichosLoaded){ const sel=$('au-nicho');
+      Object.keys(s.por_nicho||{}).forEach(nk=>{const o=document.createElement('option');o.value=nk;o.textContent=nk;sel.appendChild(o);});
+      _auNichosLoaded=true; }
+  }catch(e){}
+  // Recomendaciones
+  try{
+    const inf=await api('/api/autoanalisis'); const recos=(inf&&inf.recomendaciones)||[];
+    $('au-reco').innerHTML=recos.length
+      ? recos.map(r=>`<div class="alerta-item apto" style="margin-bottom:8px"><div class="ico">✓</div><div><div class="dd">${esc(r)}</div></div></div>`).join('')
+      : '<div class="muted">Todavía sin recomendaciones: corré una auditoría y dejá llegar las primeras respuestas.</div>';
+  }catch(e){ $('au-reco').innerHTML='<div class="muted">—</div>'; }
+  loadAuditados();
+}
+async function loadAuditados(){ try{
+  const nivel=$('au-nivel').value||'', nicho=$('au-nicho').value||'';
+  const qs=new URLSearchParams(); if(nivel)qs.set('nivel',nivel); if(nicho)qs.set('nicho',nicho);
+  const r=await api('/api/auditoria?'+qs.toString()); const box=$('au-list');
+  if(!r.length){ box.innerHTML='<div class="empty">Sin negocios auditados todavía. Corré una rutina de prospección (tipo “auditoria”) o <code>/api/prospeccion/correr</code>.</div>'; return; }
+  box.innerHTML='<div class="grid2">'+r.slice(0,120).map(n=>{
+    const a=n.auditoria||{}; const d=_digs(a.telefono);
+    const wa=d.length>=10?`<a href="https://wa.me/${d}" target="_blank" rel="noopener" class="chip chip-apto" style="text-decoration:none">WhatsApp</a>`:'';
+    const tel=d?`<a href="tel:${d}" class="chip chip-neutro" style="text-decoration:none">☎ ${esc(_fmtTel(a.telefono))}</a>`:'';
+    const maps=a.maps_url?`<a href="${esc(a.maps_url)}" target="_blank" rel="noopener" class="chip chip-info" style="text-decoration:none">Google Maps</a>`:'';
+    const senales=(a.senales||[]).map(s=>`<li>${esc(s)}</li>`).join('');
+    return `<div class="card pad-sm">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div style="min-width:0"><div style="font-weight:600">${esc(n.empresa||'—')}</div>
+          <div class="muted" style="font-size:12px">${esc(n.nicho||'')}</div></div>
+        <span class="chip chip-${NIVEL_CHIP[a.nivel]||'neutro'}">${NIVEL_TXT[a.nivel]||a.nivel} · ${a.score||0}</span>
+      </div>
+      <div class="muted" style="font-size:13px;margin:9px 0;font-style:italic">“${esc(a.evidencia||'')}”</div>
+      ${senales?`<ul style="margin:0 0 10px;padding-left:18px;font-size:12px;color:var(--tinta-suave)">${senales}</ul>`:''}
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${wa} ${tel} ${maps}</div>
+    </div>`;}).join('')+'</div>';
+}catch(e){ $('au-list').innerHTML='<div class="muted">No se pudo cargar.</div>'; } }
+document.addEventListener('change',e=>{ if(e.target.id==='au-nivel'||e.target.id==='au-nicho')loadAuditados(); });
 
 /* ── Campañas: performance (read-only) + detalle ── */
 async function loadDashboard(){ try{

@@ -83,6 +83,28 @@ def _fire_safe(r):
                 cfg.get("nicho", "constructoras"), cfg.get("pais", "Argentina"),
                 int(cfg.get("cantidad", 7)), float(cfg.get("ventana_horas", 4)),
                 cfg.get("pasos") or [], float(cfg.get("delay2", 24)), float(cfg.get("delay3", 48)))
+        elif r["tipo"] == "auditoria":
+            # Mystery shopper automático: busca + audita negocios del nicho. NO envía mails.
+            import json as _json
+            import prospeccion
+            cfg = _json.loads(instr or "{}")
+            prospeccion.correr_auditoria(
+                cfg.get("nicho", "inmobiliarias"),
+                cantidad=int(cfg.get("cantidad", 30)),
+                zonas_por_corrida=int(cfg.get("zonas_por_corrida", 4)),
+                chequear_web=bool(cfg.get("chequear_web", True)))
+        elif r["tipo"] == "promocion":
+            # Puente audit → email: promueve los de score alto a la secuencia del nicho.
+            import json as _json
+            import prospeccion
+            cfg = _json.loads(instr or "{}")
+            prospeccion.promover_a_campania(
+                cfg.get("nicho", "inmobiliarias"),
+                min_score=int(cfg.get("min_score", 60)),
+                cantidad=int(cfg.get("cantidad", 20)))
+        elif r["tipo"] == "autoanalisis":
+            import autoanalisis
+            autoanalisis.analizar()
         else:
             lanzar_campania(instr)
     except Exception as e:
