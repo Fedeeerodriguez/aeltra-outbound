@@ -134,6 +134,38 @@
   .browser .bar .u{margin-left:12px; font-family:var(--mono); font-size:12px; color:#6B7A99}
   .browser .shot{display:block; width:100%; height:auto; background:#FBFBFA}
   .hero-figure .cap{margin-top:13px; font-family:var(--mono); font-size:12px; color:var(--hero-muted); text-align:center}
+  /* hero en 2 columnas: copy + formulario */
+  .hero-cols{display:grid; grid-template-columns:1.12fr .88fr; gap:44px; align-items:start}
+  @media(max-width:920px){ .hero-cols{grid-template-columns:1fr; gap:34px} }
+  /* formulario de captación (estilo Briones) */
+  .lead-card{background:rgba(255,255,255,.05); border:1px solid var(--hero-line); border-radius:18px; padding:26px 24px; backdrop-filter:blur(8px); box-shadow:0 20px 50px rgba(0,0,0,.4)}
+  .lead-card h3{color:#fff; font-size:19px}
+  .lead-card .sm{color:var(--hero-muted); font-size:13.5px; margin-top:6px; line-height:1.45}
+  .lead-field{margin-top:11px}
+  .lead-field input, .lead-field textarea{width:100%; font-family:var(--body); font-size:15px; color:var(--hero-ink); background:rgba(255,255,255,.04); border:1px solid var(--hero-line); border-radius:11px; padding:12px 14px; outline:none; transition:border-color .15s; resize:vertical}
+  .lead-field input::placeholder, .lead-field textarea::placeholder{color:#6B789A}
+  .lead-field input:focus, .lead-field textarea:focus{border-color:var(--hero-wm)}
+  .lead-card .btn{width:100%; justify-content:center; margin-top:14px}
+  .lead-note{color:var(--hero-muted); font-size:12px; margin-top:12px; text-align:center}
+  .lead-ok{display:none; text-align:center; padding:30px 10px; color:var(--hero-ink)}
+  .lead-ok .big{font-size:40px; color:var(--hero-wm)}
+  /* banda de métricas (Aeltra en números) */
+  .metrics{background:var(--hero-bg); color:var(--hero-ink); border-block:1px solid var(--hero-line); position:relative; overflow:hidden}
+  .metrics::before{content:""; position:absolute; inset:0; background:radial-gradient(640px 300px at 50% -40%, rgba(45,110,230,.20), transparent 62%); pointer-events:none}
+  .metrics .wrap{padding-block:54px; position:relative}
+  .metrics-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:24px; text-align:center}
+  @media(max-width:720px){ .metrics-grid{grid-template-columns:1fr 1fr; gap:30px 16px} }
+  .metric .n{font-family:var(--display); font-weight:800; font-size:clamp(34px,5vw,50px); line-height:1}
+  .metric .l{color:var(--hero-muted); font-size:13.5px; margin-top:9px; line-height:1.35}
+  /* tecnología & respaldo */
+  .tech{background:var(--surface); border-block:1px solid var(--line)}
+  .tech .wrap{padding-block:88px}
+  .tech-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  @media(max-width:760px){ .tech-grid{grid-template-columns:1fr} }
+  .tech-card{border:1px solid var(--line); border-radius:14px; padding:22px; background:var(--bg)}
+  .tech-card .cat{font-family:var(--mono); font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent-ink)}
+  .tech-card h3{font-size:17px; margin-top:8px; letter-spacing:-.01em}
+  .tech-card p{color:var(--muted); font-size:14.5px; margin-top:7px; line-height:1.5}
 
   /* section shell */
   section{padding-block:88px}
@@ -286,6 +318,7 @@
       <a class="lnk" href="#casos">Casos</a>
       <a class="lnk" href="#como">Cómo lo hacemos</a>
       <a class="lnk" href="#nova">Nueva generación</a>
+      <a class="lnk" href="#tecnologia">Tecnología</a>
       <a class="nav-cta js-cta" href="#contacto">Agendá una llamada</a>
     </nav>
   </div>
@@ -295,19 +328,31 @@
 <div id="top" class="hero">
   <div class="hero-grid" aria-hidden="true"></div>
   <div class="wrap hero-in">
-    <div class="hero-copy">
-      <span class="eyebrow">Software &amp; IA operativa · a medida</span>
-      <h1>Convertí tu empresa en una de <span class="mark">nueva generación</span>.</h1>
-      <p class="hero-sub">Aeltra implementa inteligencia artificial operativa a medida, montada sobre tu operación real. No te mudamos a un sistema nuevo: tomamos tu empresa tal como trabaja hoy y la potenciamos. La tecnología se adapta a vos, no al revés.</p>
-      <div class="hero-cta">
-        <a class="btn btn-primary btn-lg js-cta" href="#contacto">Agendá una llamada <span class="arrow">→</span></a>
-        <a class="btn hero-ghost btn-lg" href="#casos">Ver casos</a>
+    <div class="hero-cols">
+      <div class="hero-copy">
+        <span class="eyebrow">Software &amp; IA operativa · a medida</span>
+        <h1>Convertí tu empresa en una de <span class="mark">nueva generación</span>.</h1>
+        <p class="hero-sub">Aeltra implementa inteligencia artificial operativa a medida, montada sobre tu operación real. No te mudamos a un sistema nuevo: tomamos tu empresa tal como trabaja hoy y la potenciamos. La tecnología se adapta a vos, no al revés.</p>
+        <div class="hero-trust">
+          <div class="st"><span class="n">6</span><span class="l">Proyectos en producción</span></div>
+          <div class="st"><span class="n">4</span><span class="l">Sectores</span></div>
+          <div class="st"><span class="n">2</span><span class="l">Productos propios</span></div>
+        </div>
       </div>
-      <div class="hero-trust">
-        <div class="st"><span class="n">6</span><span class="l">Proyectos en producción</span></div>
-        <div class="st"><span class="n">4</span><span class="l">Sectores</span></div>
-        <div class="st"><span class="n">2</span><span class="l">Productos propios</span></div>
-      </div>
+      <aside class="lead-card">
+        <form id="lead-form" novalidate>
+          <h3>Contanos tu caso</h3>
+          <p class="sm">Te respondemos y coordinamos una llamada de 20 minutos, sin compromiso.</p>
+          <div class="lead-field"><input name="nombre" placeholder="Nombre" autocomplete="name"></div>
+          <div class="lead-field"><input name="email" type="email" required placeholder="Email" autocomplete="email"></div>
+          <div class="lead-field"><input name="telefono" placeholder="Teléfono / WhatsApp" autocomplete="tel"></div>
+          <div class="lead-field"><input name="empresa" placeholder="Empresa (opcional)"></div>
+          <div class="lead-field"><textarea name="mensaje" rows="2" placeholder="¿Qué querés automatizar? (opcional)"></textarea></div>
+          <button class="btn btn-primary" type="submit">Quiero más información</button>
+          <p class="lead-note">O escribinos a contacto@aeltra.company</p>
+        </form>
+        <div class="lead-ok" id="lead-ok"><div class="big">✓</div><p style="margin-top:10px">¡Gracias! Te contactamos a la brevedad.</p></div>
+      </aside>
     </div>
     <div class="hero-figure">
       <div class="browser">
@@ -341,6 +386,18 @@
     </div>
   </div>
 </section>
+
+<!-- ░░ MÉTRICAS ░░ -->
+<div class="metrics">
+  <div class="wrap">
+    <div class="metrics-grid">
+      <div class="metric"><div class="n grad-text">+600</div><div class="l">Correos enviados por nuestra IA</div></div>
+      <div class="metric"><div class="n grad-text">95%</div><div class="l">Tasa de entrega</div></div>
+      <div class="metric"><div class="n grad-text">24/7</div><div class="l">Agentes operando sin pausa</div></div>
+      <div class="metric"><div class="n grad-text">100%</div><div class="l">A medida, sobre tu operación</div></div>
+    </div>
+  </div>
+</div>
 
 <!-- ░░ QUÉ HACEMOS ░░ -->
 <section id="que">
@@ -488,6 +545,25 @@
   </div>
 </section>
 
+<!-- ░░ TECNOLOGÍA & RESPALDO ░░ -->
+<section id="tecnologia" class="tech">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Tecnología &amp; respaldo</span>
+      <h2>Construido sobre tecnología de primer nivel.</h2>
+      <p>En vez de sellos de vitrina, nuestro respaldo es la tecnología sobre la que construimos — la misma que usan las empresas más serias del mundo.</p>
+    </div>
+    <div class="tech-grid">
+      <div class="tech-card"><div class="cat">Inteligencia artificial</div><h3>Claude · Anthropic</h3><p>Modelos de IA de última generación para razonar, redactar y decidir dentro de tu operación.</p></div>
+      <div class="tech-card"><div class="cat">Datos</div><h3>PostgreSQL · Supabase</h3><p>Base de datos robusta y en tiempo real: la información siempre ordenada y disponible.</p></div>
+      <div class="tech-card"><div class="cat">Mensajería</div><h3>WhatsApp Business API · Email</h3><p>Canales oficiales para atender y contactar, con entregabilidad cuidada.</p></div>
+      <div class="tech-card"><div class="cat">Backend</div><h3>Python · FastAPI</h3><p>Motores rápidos y confiables que corren la lógica de cada automatización.</p></div>
+      <div class="tech-card"><div class="cat">Datos &amp; prospección</div><h3>Google · Apify</h3><p>Fuentes para encontrar y enriquecer información de negocios a escala.</p></div>
+      <div class="tech-card"><div class="cat">Infraestructura</div><h3>Vercel · EasyPanel</h3><p>Despliegue continuo y operación 24/7 de cada plataforma que construimos.</p></div>
+    </div>
+  </div>
+</section>
+
 <!-- ░░ POR QUÉ ░░ -->
 <section id="por-que">
   <div class="wrap">
@@ -557,6 +633,7 @@
         <a href="#casos">Casos</a>
         <a href="#como">Cómo</a>
         <a href="#nova">Nueva generación</a>
+        <a href="#tecnologia">Tecnología</a>
         <a href="terminos.html">Términos y condiciones</a>
         <a class="js-cta" href="#contacto">Agendá una llamada</a>
       </nav>
@@ -576,6 +653,27 @@
     });
   }catch(e){}
   try{ document.getElementById('yr').textContent = new Date().getFullYear(); }catch(e){}
+
+  // ── Formulario de captación → guarda el lead en el CRM + avisa a la casilla ──
+  var API_BASE = "https://panel.aeltra.company";
+  var lf = document.getElementById('lead-form');
+  if(lf){ lf.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var data = Object.fromEntries(new FormData(lf).entries());
+    if(!data.email || data.email.indexOf('@') < 0){ alert('Dejanos un email válido para poder contactarte.'); return; }
+    var btn = lf.querySelector('button[type=submit]'); var prev = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try{
+      var r = await fetch(API_BASE + '/api/lead', { method:'POST',
+        headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+      if(!r.ok) throw 0;
+      lf.style.display = 'none';
+      document.getElementById('lead-ok').style.display = 'block';
+    }catch(err){
+      btn.disabled = false; btn.textContent = prev;
+      alert('No se pudo enviar. Probá de nuevo o escribinos a contacto@aeltra.company');
+    }
+  }); }
 </script>
 </body>
 </html>

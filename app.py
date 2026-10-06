@@ -33,7 +33,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 async def _basic_auth(request, call_next):
     """Si BASIC_AUTH_USER/PASS están seteados, exige auth en todo menos la baja."""
     # /api/baja (opt-out público) y /api/health (healthcheck) van sin auth.
-    _publicos = ("/api/baja", "/api/health")
+    _publicos = ("/api/baja", "/api/health", "/api/lead")
     if config.BASIC_AUTH_USER and config.BASIC_AUTH_PASS and not request.url.path.startswith(_publicos):
         import base64
         import secrets
@@ -366,6 +366,55 @@ def api_contacto_detalle(cid: int):
         return d
     finally:
         conn.close()
+
+
+class LeadReq(BaseModel):
+    nombre: str = ""
+    email: str = ""
+    telefono: str = ""
+    empresa: str = ""
+    mensaje: str = ""
+
+
+@app.post("/api/lead")
+async def api_lead(req: LeadReq):
+    """Lead desde la web (formulario del sitio). Lo guarda en el CRM y avisa a la
+    casilla. Público (sin auth) y con CORS abierto para que postee desde Vercel."""
+    email = (req.email or "").strip().lower()
+    if not email or "@" not in email:
+        return JSONResponse({"ok": False, "error": "email inválido"}, status_code=400)
+
+    def _run():
+        cid = None
+        try:
+            cid = pipeline.add_contact(req.nombre or "", email, req.empresa or "",
+                                       "lead-web", "", "web-lead")
+            if cid:
+                pipeline.add_evento(cid, "lead_web",
+                                    {"telefono": (req.telefono or "")[:40],
+                                     "empresa": (req.empresa or "")[:120],
+                                     "mensaje": (req.mensaje or "")[:1000]})
+                pipeline.log_agente("web", f"Lead web: {req.nombre or email}",
+                                    f"{email} · {req.telefono}", True)
+        except Exception:
+            pass
+        # Aviso a la casilla (interno). Si el SMTP falla, no rompe el alta del lead.
+        try:
+            from sender import get_sender
+            cuerpo = ("Nuevo lead desde la web de Aeltra:\n\n"
+                      f"Nombre:   {req.nombre or '—'}\n"
+                      f"Email:    {email}\n"
+                      f"Teléfono: {req.telefono or '—'}\n"
+                      f"Empresa:  {req.empresa or '—'}\n\n"
+                      f"Mensaje:\n{req.mensaje or '—'}\n")
+            destino = config.FROM_EMAIL or "contacto@aeltra.company"
+            get_sender().send(destino, "Aeltra",
+                              f"🟢 Nuevo lead web: {req.nombre or email}", "", cuerpo)
+        except Exception:
+            pass
+        return {"ok": True}
+
+    return await run_in_threadpool(_run)
 
 
 @app.get("/api/contactables")
