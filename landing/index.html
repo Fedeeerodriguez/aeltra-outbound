@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Aeltra · Software & IA</title>
-<meta name="description" content="Aeltra construye software y agentes de IA a medida que le sacan el trabajo manual a tu negocio: menos horas perdidas, procesos ordenados y respuestas al instante.">
+<title>Aeltra · Software & IA operativa a medida</title>
+<meta name="description" content="Aeltra convierte tu empresa en una de nueva generación con inteligencia artificial operativa a medida. La tecnología se adapta a vos, no al revés: mejoras exponenciales con el mínimo cambio y esfuerzo.">
+<meta property="og:title" content="Aeltra · La tecnología se adapta a vos">
+<meta property="og:description" content="Convertimos tu empresa en una de nueva generación con IA operativa a medida, montada sobre tu operación real.">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -44,7 +47,7 @@
   }
 
   *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%}
+  html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
   body{
     margin:0; background:var(--bg); color:var(--ink);
     font-family:var(--body); font-size:17px; line-height:1.6;
@@ -70,18 +73,28 @@
   .arrow{transition:transform .15s ease}
   .btn:hover .arrow{transform:translateX(3px)}
 
+  /* ░ top banner (lema) ░ */
+  .topbar{background:var(--grad-band); color:#fff}
+  .topbar-in{display:flex; align-items:center; justify-content:center; gap:14px; min-height:40px; padding-block:7px;
+    font-size:14px; text-align:center; flex-wrap:wrap}
+  .topbar-in b{font-weight:600}
+  .topbar-in .sep{opacity:.5}
+  .topbar-in a{font-family:var(--mono); font-size:12.5px; letter-spacing:.04em; border-bottom:1px solid rgba(255,255,255,.55); padding-bottom:1px}
+  .topbar-in a:hover{border-color:#fff}
+  @media(max-width:620px){ .topbar-in .sep, .topbar-in .tb-extra{display:none} }
+
   /* header */
   header.nav{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--hero-bg) 86%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--hero-line)}
   .nav-in{display:flex; align-items:center; justify-content:space-between; height:66px}
   .brand{display:flex; align-items:center; gap:11px; color:var(--hero-ink); font-family:var(--display); font-weight:800; font-size:21px; letter-spacing:-.02em}
   .brand .t{color:var(--hero-wm)}
   .logo{width:28px; height:28px; flex:0 0 auto}
-  .nav-links{display:flex; align-items:center; gap:28px}
+  .nav-links{display:flex; align-items:center; gap:26px}
   .nav-links a{color:var(--hero-muted); font-size:15px; font-weight:500; transition:color .15s ease}
   .nav-links a:hover{color:var(--hero-ink)}
   .nav-cta{color:var(--hero-ink)!important; border:1px solid var(--hero-line); padding:9px 16px; border-radius:999px}
   .nav-cta:hover{border-color:var(--cyan)}
-  @media(max-width:760px){ .nav-links .lnk{display:none} }
+  @media(max-width:860px){ .nav-links .lnk{display:none} }
 
   /* hero */
   .hero{position:relative; background:var(--hero-bg); color:var(--hero-ink); overflow:hidden}
@@ -95,12 +108,12 @@
     background-image:linear-gradient(var(--hero-line) 1px, transparent 1px), linear-gradient(90deg, var(--hero-line) 1px, transparent 1px);
     background-size:64px 64px; -webkit-mask-image:radial-gradient(1000px 560px at 72% 0%, #000, transparent 72%);
     mask-image:radial-gradient(1000px 560px at 72% 0%, #000, transparent 72%)}
-  .hero-in{position:relative; padding-block:78px 92px; max-width:820px}
+  .hero-in{position:relative; padding-block:76px 90px; max-width:860px}
   .hero .eyebrow{color:var(--hero-wm)}
-  .hero h1{color:var(--hero-ink); font-size:clamp(38px,7vw,72px); font-weight:800; margin-top:20px}
+  .hero h1{color:var(--hero-ink); font-size:clamp(38px,7vw,70px); font-weight:800; margin-top:20px}
   .hero h1 .mark{position:relative; white-space:nowrap; color:#fff}
   .hero h1 .mark::after{content:""; position:absolute; left:0; right:0; bottom:.06em; height:.28em; background:var(--grad); opacity:.95; z-index:-1; border-radius:3px}
-  .hero-sub{color:var(--hero-muted); font-size:clamp(17px,2.4vw,21px); line-height:1.55; margin-top:24px; max-width:600px}
+  .hero-sub{color:var(--hero-muted); font-size:clamp(17px,2.4vw,21px); line-height:1.55; margin-top:24px; max-width:620px}
   .hero-cta{display:flex; flex-wrap:wrap; gap:14px; margin-top:36px}
   .hero-ghost{background:transparent; color:var(--hero-ink); border-color:var(--hero-line)}
   .hero-ghost:hover{border-color:var(--hero-ink)}
@@ -110,9 +123,22 @@
 
   /* section shell */
   section{padding-block:88px}
-  .sec-head{max-width:640px; margin-bottom:44px}
+  .sec-head{max-width:660px; margin-bottom:44px}
+  .sec-head.center{margin-inline:auto; text-align:center}
   .sec-head h2{font-size:clamp(28px,4.4vw,42px); margin-top:14px}
   .sec-head p{color:var(--muted); font-size:18px; margin-top:14px}
+
+  /* nosotros: misión / visión */
+  .nosotros{background:var(--surface); border-block:1px solid var(--line)}
+  .mv{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+  @media(max-width:720px){ .mv{grid-template-columns:1fr} }
+  .mv-card{background:var(--bg); border:1px solid var(--line); border-radius:18px; padding:34px 30px; position:relative; overflow:hidden}
+  .mv-card::before{content:""; position:absolute; left:0; top:0; width:100%; height:4px; background:var(--grad)}
+  .mv-card .ic{width:44px; height:44px; border-radius:12px; background:var(--grad); display:grid; place-items:center; color:#fff; box-shadow:0 6px 16px rgba(45,110,230,.26)}
+  .mv-card .ic svg{width:23px; height:23px}
+  .mv-card h3{font-size:24px; margin-top:18px}
+  .mv-card p{color:var(--muted); font-size:16.5px; margin-top:12px; line-height:1.6}
+  .mv-card .lead{color:var(--ink); font-weight:600}
 
   /* servicios */
   .cards{display:grid; grid-template-columns:repeat(2,1fr); gap:18px}
@@ -142,6 +168,30 @@
   .step p{color:var(--muted); font-size:15.5px; margin-top:8px}
   .step .free{display:inline-block; margin-top:12px; font-family:var(--mono); font-size:11.5px; color:var(--accent-ink); background:var(--accent-soft); padding:3px 9px; border-radius:6px; letter-spacing:.04em}
 
+  /* ░ know-how / nueva generación (banda oscura) ░ */
+  .nova{position:relative; background:var(--hero-bg); color:var(--hero-ink); overflow:hidden; border-block:1px solid var(--hero-line)}
+  .nova::before{content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(640px 420px at 14% 0%, rgba(56,230,192,.12), transparent 60%),
+      radial-gradient(620px 460px at 92% 110%, rgba(107,69,240,.18), transparent 62%)}
+  .nova .eyebrow{color:var(--hero-wm)}
+  .nova h2{color:#fff; font-size:clamp(30px,5vw,50px); max-width:760px; position:relative}
+  .nova .lede{color:var(--hero-muted); font-size:clamp(18px,2.4vw,22px); max-width:680px; margin-top:20px; line-height:1.55; position:relative}
+  .nova .lede b{color:var(--hero-ink); font-weight:600}
+  .pillars{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:48px; position:relative}
+  @media(max-width:820px){ .pillars{grid-template-columns:1fr} }
+  .pillar{background:rgba(255,255,255,.035); border:1px solid var(--hero-line); border-radius:16px; padding:26px 24px}
+  .pillar .pn{font-family:var(--mono); font-size:12px; letter-spacing:.1em; color:var(--hero-wm)}
+  .pillar h3{color:var(--hero-ink); font-size:20px; margin-top:12px}
+  .pillar p{color:var(--hero-muted); font-size:15.5px; margin-top:10px; line-height:1.55}
+  /* contraste "a vos / no al revés" */
+  .contrast{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px; position:relative}
+  @media(max-width:620px){ .contrast{grid-template-columns:1fr} }
+  .contrast div{border:1px solid var(--hero-line); border-radius:12px; padding:16px 18px; font-size:15px}
+  .contrast .bad{color:var(--hero-muted)} .contrast .bad b{color:#fff; font-weight:600}
+  .contrast .good{background:rgba(56,230,192,.06); border-color:rgba(56,230,192,.28)} .contrast .good b{color:var(--hero-wm); font-weight:600}
+  .contrast .lbl{font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; display:block; margin-bottom:6px; opacity:.8}
+
   /* por que */
   .why-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:48px; align-items:start}
   @media(max-width:820px){ .why-grid{grid-template-columns:1fr; gap:32px} }
@@ -152,7 +202,7 @@
   .why-item .k svg{width:16px; height:16px}
   .why-item h3{font-size:18px}
   .why-item p{color:var(--muted); font-size:15.5px; margin-top:4px}
-  .why-aside{background:var(--hero-bg); color:var(--hero-ink); border-radius:18px; padding:34px 30px; position:sticky; top:96px; overflow:hidden}
+  .why-aside{background:var(--hero-bg); color:var(--hero-ink); border-radius:18px; padding:34px 30px; position:sticky; top:118px; overflow:hidden}
   .why-aside::before{content:""; position:absolute; inset:0; background:radial-gradient(340px 240px at 100% 0%, rgba(38,180,232,.18), transparent 62%); pointer-events:none}
   .why-aside .eyebrow{color:var(--hero-wm); position:relative}
   .why-aside p{color:var(--hero-muted); font-size:17px; margin-top:14px; line-height:1.55; position:relative}
@@ -163,7 +213,7 @@
   .cta-band{background:var(--grad-band); color:#fff; border-radius:22px; padding:clamp(36px,6vw,64px); text-align:center; position:relative; overflow:hidden}
   .cta-band::after{content:""; position:absolute; inset:0; background:radial-gradient(620px 320px at 50% -30%, rgba(255,255,255,.24), transparent 60%); pointer-events:none}
   .cta-band h2{color:#fff; font-size:clamp(28px,5vw,46px); position:relative}
-  .cta-band p{color:rgba(255,255,255,.92); font-size:18px; max-width:520px; margin:16px auto 0; position:relative}
+  .cta-band p{color:rgba(255,255,255,.92); font-size:18px; max-width:540px; margin:16px auto 0; position:relative}
   .cta-band .btn{margin-top:30px; position:relative}
   .btn-onaccent{background:#fff; color:#1E52C4; border-color:#fff; box-shadow:0 8px 22px rgba(10,14,26,.22)}
   .btn-onaccent:hover{transform:translateY(-2px); background:#fff}
@@ -173,14 +223,24 @@
   .foot-in{display:flex; flex-wrap:wrap; gap:22px; justify-content:space-between; align-items:center}
   .foot-brand{display:flex; align-items:center; gap:10px; color:var(--ink); font-family:var(--display); font-weight:800; font-size:19px}
   .foot-brand .t{color:var(--accent)}
-  .foot-links{display:flex; gap:22px; font-size:15px}
+  .foot-links{display:flex; gap:22px; font-size:15px; flex-wrap:wrap}
   .foot-links a{color:var(--muted)} .foot-links a:hover{color:var(--ink)}
   .foot-fine{font-family:var(--mono); font-size:12.5px; color:var(--muted); margin-top:20px}
 
-  @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{transition:none!important} }
 </style>
 </head>
 <body>
+
+<!-- ░░ TOP BANNER (lema) ░░ -->
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <span><b>Aeltra</b> — La tecnología se adapta a vos.</span>
+    <span class="sep">·</span>
+    <span class="tb-extra">Convertí tu empresa en una de nueva generación con IA</span>
+    <a class="js-cta" href="#contacto">Agendá una llamada →</a>
+  </div>
+</div>
 
 <!-- ░░ HEADER ░░ -->
 <header class="nav">
@@ -196,9 +256,10 @@
       <span>Ael<span class="t">tra</span></span>
     </a>
     <nav class="nav-links">
+      <a class="lnk" href="#nosotros">Nosotros</a>
       <a class="lnk" href="#que">Qué hacemos</a>
-      <a class="lnk" href="#como">Cómo trabajamos</a>
-      <a class="lnk" href="#por-que">Por qué Aeltra</a>
+      <a class="lnk" href="#como">Cómo lo hacemos</a>
+      <a class="lnk" href="#nova">Nueva generación</a>
       <a class="nav-cta js-cta" href="#contacto">Agendá una llamada</a>
     </nav>
   </div>
@@ -208,28 +269,51 @@
 <div id="top" class="hero">
   <div class="hero-grid" aria-hidden="true"></div>
   <div class="wrap hero-in">
-    <span class="eyebrow">Software &amp; IA · a medida</span>
-    <h1>Hacer todo a mano te sale <span class="mark">más caro</span> de lo que creés.</h1>
-    <p class="hero-sub">Aeltra construye software y agentes de IA a tu medida que hacen solos las tareas repetitivas, ordenan tus procesos y responden al instante. Menos horas pagadas en lo que una máquina resuelve — y menos plata que se escapa por lentitud y desorden.</p>
+    <span class="eyebrow">Software &amp; IA operativa · a medida</span>
+    <h1>Convertí tu empresa en una de <span class="mark">nueva generación</span>.</h1>
+    <p class="hero-sub">Aeltra implementa inteligencia artificial operativa a medida, montada sobre tu operación real. No te mudamos a un sistema nuevo: tomamos tu empresa tal como trabaja hoy y la potenciamos. La tecnología se adapta a vos, no al revés.</p>
     <div class="hero-cta">
       <a class="btn btn-primary btn-lg js-cta" href="#contacto">Agendá una llamada <span class="arrow">→</span></a>
       <a class="btn hero-ghost btn-lg" href="#que">Ver qué hacemos</a>
     </div>
     <div class="hero-meta">
-      <span><i class="dot"></i> Menos trabajo manual</span>
-      <span><i class="dot"></i> Respuesta al instante</span>
-      <span><i class="dot"></i> Procesos ordenados</span>
+      <span><i class="dot"></i> IA operativa a medida</span>
+      <span><i class="dot"></i> Se adapta a tu operación</span>
+      <span><i class="dot"></i> Mínimo cambio, máximo impacto</span>
     </div>
   </div>
 </div>
+
+<!-- ░░ NOSOTROS · MISIÓN / VISIÓN ░░ -->
+<section id="nosotros" class="nosotros">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Nosotros</span>
+      <h2>Una compañía de tecnología con una idea fija.</h2>
+      <p>Aeltra se dedica a la implementación de soluciones empresariales con inteligencia artificial operativa: tomamos las tareas lógicas y repetitivas de una empresa y las convertimos en sistemas que funcionan solos. No IA de laboratorio ni chatbots de demo — IA que trabaja adentro de la operación, todos los días.</p>
+    </div>
+    <div class="mv">
+      <article class="mv-card">
+        <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8" fill="currentColor"/></svg></div>
+        <h3>Misión</h3>
+        <p><span class="lead">Que cualquier empresa pueda operar como una de nueva generación.</span> Llevar la inteligencia artificial operativa adentro de las PyMEs —sin importar su tamaño— para sacarles de encima el trabajo repetitivo y liberar a su gente para lo que de verdad importa.</p>
+      </article>
+      <article class="mv-card">
+        <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h3>Visión</h3>
+        <p><span class="lead">Un mundo donde la tecnología se adapta a las personas, no al revés.</span> Que tener IA operativa trabajando en tu empresa sea tan natural como tener una computadora — accesible, a medida y puesta al servicio de cómo ya trabajás.</p>
+      </article>
+    </div>
+  </div>
+</section>
 
 <!-- ░░ QUÉ HACEMOS ░░ -->
 <section id="que">
   <div class="wrap">
     <div class="sec-head">
       <span class="eyebrow">Qué hacemos</span>
-      <h2>Ponemos IA donde tu negocio pierde plata.</h2>
-      <p>No vendemos "IA" por moda. Miramos tu operación, encontramos dónde se van las horas y las ventas —trabajo manual, procesos lentos, respuestas tardías— y construimos la pieza que lo resuelve.</p>
+      <h2>Ponemos IA donde tu negocio pierde tiempo y plata.</h2>
+      <p>No vendemos "IA" por moda ni un paquete cerrado. Miramos tu operación, encontramos dónde se van las horas y las ventas —trabajo manual, procesos lentos, respuestas tardías— y construimos la pieza a medida que lo resuelve.</p>
     </div>
     <div class="cards">
       <article class="card">
@@ -260,13 +344,13 @@
   </div>
 </section>
 
-<!-- ░░ CÓMO ░░ -->
+<!-- ░░ CÓMO LO HACEMOS ░░ -->
 <div id="como" class="proceso">
   <div class="wrap" style="padding-block:88px">
     <div class="sec-head">
-      <span class="eyebrow">Cómo trabajamos</span>
+      <span class="eyebrow">Cómo lo hacemos</span>
       <h2>Simple, medible y sin humo.</h2>
-      <p>Cuatro pasos. Empezamos por entender el problema, no por vender una herramienta.</p>
+      <p>Cuatro pasos. Empezamos por entender tu operación, no por venderte una herramienta.</p>
     </div>
     <div class="steps">
       <div class="step">
@@ -277,8 +361,8 @@
       </div>
       <div class="step">
         <div class="n">02</div>
-        <h3>Diseño</h3>
-        <p>Armamos la solución a tu proceso real: qué hace el agente, con qué se conecta y cómo lo vas a medir.</p>
+        <h3>Diseño a medida</h3>
+        <p>Armamos la solución sobre tu proceso real: qué hace el agente, con qué se conecta y cómo lo vas a medir. Se adapta a tu forma de trabajar.</p>
       </div>
       <div class="step">
         <div class="n">03</div>
@@ -288,11 +372,43 @@
       <div class="step">
         <div class="n">04</div>
         <h3>Optimización</h3>
-        <p>Medimos resultados y ajustamos. Los agentes mejoran con tus propios datos, semana a semana.</p>
+        <p>Medimos resultados y ajustamos. Los sistemas mejoran con tus propios datos, semana a semana.</p>
       </div>
     </div>
   </div>
 </div>
+
+<!-- ░░ KNOW-HOW · NUEVA GENERACIÓN ░░ -->
+<section id="nova" class="nova">
+  <div class="wrap">
+    <span class="eyebrow">El know-how</span>
+    <h2>Te convertimos en una empresa de nueva generación.</h2>
+    <p class="lede">No se trata de comprar "un software". Se trata de <b>cambiar cómo opera tu empresa</b> — con inteligencia artificial trabajando adentro, todos los días. Nosotros traemos ese know-how y lo montamos sobre lo que ya tenés, para que la operación mejore de forma exponencial con el mínimo cambio y esfuerzo.</p>
+
+    <div class="contrast">
+      <div class="bad"><span class="lbl">El modelo viejo</span>Comprás un sistema enlatado y <b>tu empresa se amolda a la herramienta</b>. Cubre el 70%, obliga a rehacer procesos y frena la operación.</div>
+      <div class="good"><span class="lbl">La forma Aeltra</span><b>La herramienta se adapta a vos.</b> Tomamos tu operación tal como es hoy y le montamos IA a medida encima, sin rehacer todo.</div>
+    </div>
+
+    <div class="pillars">
+      <article class="pillar">
+        <div class="pn">01</div>
+        <h3>Nos adaptamos a vos</h3>
+        <p>Partimos de cómo trabaja tu empresa hoy —tus planillas, tus procesos, tus herramientas— y construimos encima. No al revés.</p>
+      </article>
+      <article class="pillar">
+        <div class="pn">02</div>
+        <h3>Mejora exponencial, cambio mínimo</h3>
+        <p>Apuntamos al proceso que más te cuesta y lo transformamos, sin frenar la operación ni obligar a tu gente a reaprender todo.</p>
+      </article>
+      <article class="pillar">
+        <div class="pn">03</div>
+        <h3>De tradicional a nueva generación</h3>
+        <p>Quedás con una operación donde lo repetitivo lo hace la IA y tu equipo se dedica a lo que mueve el negocio.</p>
+      </article>
+    </div>
+  </div>
+</section>
 
 <!-- ░░ POR QUÉ ░░ -->
 <section id="por-que">
@@ -326,7 +442,7 @@
         <span class="eyebrow">La pregunta que importa</span>
         <p>¿Cuántas horas de tu equipo se fueron esta semana en tareas que una máquina podía hacer sola? ¿Cuántas ventas se cayeron por responder tarde?</p>
         <p>Eso es lo que te está costando hoy. Y lo primero es ponerle un número.</p>
-        <div class="sig">Ael<b>tra</b> // software &amp; ia</div>
+        <div class="sig">Ael<b>tra</b> // la tecnología se adapta a vos</div>
       </aside>
     </div>
   </div>
@@ -358,13 +474,14 @@
         <span>Ael<span class="t">tra</span></span>
       </div>
       <nav class="foot-links">
+        <a href="#nosotros">Nosotros</a>
         <a href="#que">Qué hacemos</a>
         <a href="#como">Cómo</a>
-        <a href="#por-que">Por qué</a>
+        <a href="#nova">Nueva generación</a>
         <a class="js-cta" href="#contacto">Agendá una llamada</a>
       </nav>
     </div>
-    <p class="foot-fine">Aeltra · Grupo Creativo · Software &amp; IA — hacemos tu negocio más eficiente con tecnología a medida. © <span id="yr">2026</span></p>
+    <p class="foot-fine">Aeltra · Software &amp; IA operativa a medida — la tecnología se adapta a vos. contacto@aeltra.company · © <span id="yr">2026</span></p>
   </div>
 </footer>
 
@@ -374,7 +491,7 @@
   // Si preferís WhatsApp en vez de Calendly, poné:  "https://wa.me/549XXXXXXXXXX"
   try{
     document.querySelectorAll('.js-cta').forEach(function(a){
-      if(a.getAttribute('href') === '#contacto') return;   // el del menú hace scroll a la sección
+      if(a.getAttribute('href') === '#contacto') return;   // los del menú hacen scroll a la sección
       a.href = CALENDLY_URL; a.target = "_blank"; a.rel = "noopener";
     });
   }catch(e){}
