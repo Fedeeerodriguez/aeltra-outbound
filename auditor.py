@@ -94,32 +94,40 @@ def auditar_negocio(negocio: dict, extra_keywords=None, chequear_web=True) -> di
     score = 0
     senales = []
 
-    # 1) Quejas de respuesta/atención en reseñas (la evidencia más fuerte).
+    # 1) Quejas de respuesta/atención en reseñas (la evidencia más fuerte cuando aparece).
+    #    OJO: Google devuelve solo ~5 reseñas "más relevantes" (sesgadas a positivo), así
+    #    que esta señal dispara poco; el rating y la ausencia de canal pesan más abajo.
     if citas:
-        score += min(45, 25 + 10 * len(citas))
+        score += min(48, 28 + 9 * len(citas))
         senales.append(f"{len(citas)} reseña(s) mencionan demoras o falta de respuesta")
 
-    # 2) Sin canal instantáneo detectable.
+    # 2) Sin canal instantáneo detectable (para estos rubros, el dolor central).
     if not website:
-        score += 15
-        senales.append("no tiene sitio web (solo Google Maps)")
+        score += 25
+        senales.append("no tiene sitio web (vive en WhatsApp/teléfono)")
     elif tiene_wa is False and tiene_chat is False:
         score += 30
         senales.append("la web no tiene WhatsApp ni chat para responder al instante")
     elif tiene_wa or tiene_chat:
         senales.append("ya tiene un canal instantáneo en la web")
 
-    # 3) Rating.
+    # 3) Rating: una reputación mala es una oportunidad enorme (y un lead caliente).
     try:
         r = float(rating) if rating is not None else None
     except Exception:
         r = None
     if r is not None:
-        if r < 4.0:
-            score += 20
+        if r < 2.5:
+            score += 38
+            senales.append(f"rating MUY bajo en Google ({r})")
+        elif r < 3.5:
+            score += 26
             senales.append(f"rating bajo en Google ({r})")
+        elif r < 4.0:
+            score += 18
+            senales.append(f"rating flojo en Google ({r})")
         elif r < 4.5:
-            score += 10
+            score += 8
             senales.append(f"rating mejorable ({r})")
 
     # 4) Poca o nula reputación online.
@@ -128,7 +136,7 @@ def auditar_negocio(negocio: dict, extra_keywords=None, chequear_web=True) -> di
         senales.append("sin reseñas en Google")
 
     score = max(0, min(100, score))
-    nivel = "alto" if score >= 60 else ("medio" if score >= 35 else "bajo")
+    nivel = "alto" if score >= 55 else ("medio" if score >= 30 else "bajo")
 
     # Evidencia legítima (frase corta) + bloque opcional para el mail.
     if citas:
