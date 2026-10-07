@@ -165,6 +165,26 @@ NICHOS = {
             "seguimiento.",
         ),
     },
+    "indumentaria": {
+        "nombre": "Indumentaria mayorista (Avellaneda / Once / Flores)",
+        "queries": ["ropa por mayor", "indumentaria mayorista", "venta de ropa al por mayor"],
+        "dolor": "consultas de talle, precio y mínimo por mayor que no se contestan a tiempo",
+        "quejas_clave": ["no responden", "no contestan", "no mandan lista", "no pasan precios",
+                         "no responden por mayor", "nunca contestan los mensajes", "no mandan el catalogo",
+                         "no responden instagram", "no responden whatsapp"],
+        "canal": "whatsapp",
+        "demo_pitch": ("un asistente que responde talle/color/precio por mayor y mínimo de compra al "
+                       "instante, con el stock real, y deja la seña tomada — 24/7"),
+        "pasos": _pasos(
+            "En la venta por mayor el cliente pregunta por talle, precio y mínimo, y si no le "
+            "responden en el momento, le compra al local de al lado. Son ventas que se pierden "
+            "por no llegar a contestar todos los mensajes.",
+            "La idea: que cada consulta (¿hay M negra? ¿precio x mayor? ¿mínimo?) se responda al "
+            "instante con el stock real, y deje la seña tomada — sin tener que frenar la venta del local.",
+            "Lo que resolvemos es que no se pierdan ventas por mensajes sin contestar, y que "
+            "cargar el stock sea tan simple como mandar un audio.",
+        ),
+    },
     "turismo": {
         "nombre": "Hotelería, cabañas y turismo",
         "queries": ["cabañas", "hotel", "complejo turistico", "posada"],
