@@ -63,6 +63,10 @@ FROM_ALIASES = _parse_aliases(os.getenv("FROM_ALIASES", ""))
 PROSPECTS_MOCK = _b(os.getenv("PROSPECTS_MOCK"), True)
 APIFY_TOKEN = os.getenv("APIFY_TOKEN", "")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
+# Fuente para la prospección RICA del auditor (reseñas/rating/web/teléfono):
+# 'google' (Places API, free tier grande) | 'apify' (Google Maps vía Apify, paga).
+# Por defecto Google; cae a la otra fuente si la preferida no trae nada.
+RICH_SOURCE = os.getenv("RICH_SOURCE", "google").strip().lower()
 
 # IMAP (lectura de la casilla para detectar RESPUESTAS y rebotes)
 # Con Gmail: activá IMAP en la cuenta y usá un App Password (16 caracteres) acá.

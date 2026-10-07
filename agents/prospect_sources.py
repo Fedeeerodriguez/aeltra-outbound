@@ -253,23 +253,17 @@ def _mock_negocios_rich(nicho, search_terms, cantidad):
     return out
 
 
-def buscar_negocios_rich(nicho, search_terms, cantidad, max_reviews=6):
-    """Trae negocios de Google Maps CON datos ricos (reseñas, rating, web, teléfono) para
-    el Auditor. No filtra por email: el mystery shopper contacta por WhatsApp/teléfono.
-    Cae a mock si PROSPECTS_MOCK o sin token."""
-    if config.PROSPECTS_MOCK or not config.APIFY_TOKEN:
-        return _mock_negocios_rich(nicho, search_terms, cantidad)
+def _apify_rich(nicho, search_terms, cantidad, max_reviews=6):
+    """Negocios ricos vía Apify (Google Maps). Paga. Devuelve [] si falla o sin saldo."""
+    if not config.APIFY_TOKEN:
+        return []
     try:
         actor = "compass~crawler-google-places"
         url = f"https://api.apify.com/v2/acts/{actor}/run-sync-get-dataset-items?token={config.APIFY_TOKEN}"
         terms = list(search_terms) if search_terms else [f"{nicho} Argentina"]
         payload = {
-            "searchStringsArray": terms,
-            "maxCrawledPlaces": cantidad,
-            "language": "es",
-            "maxReviews": max_reviews,
-            "reviewsSort": "newest",
-            "scrapeReviewsPersonalData": False,
+            "searchStringsArray": terms, "maxCrawledPlaces": cantidad, "language": "es",
+            "maxReviews": max_reviews, "reviewsSort": "newest", "scrapeReviewsPersonalData": False,
         }
         r = httpx.post(url, json=payload, timeout=300)
         r.raise_for_status()
@@ -286,17 +280,90 @@ def buscar_negocios_rich(nicho, search_terms, cantidad, max_reviews=6):
                 "website": it.get("website") or "",
                 "telefono": it.get("phone") or it.get("phoneUnformatted") or "",
                 "email": emails[0] if emails else "",
-                "rating": it.get("totalScore"),
-                "reviews_count": it.get("reviewsCount") or 0,
-                "reviews": reviews,
-                "categoria": it.get("categoryName") or nicho,
-                "direccion": it.get("address") or "",
-                "maps_url": it.get("url") or "",
+                "rating": it.get("totalScore"), "reviews_count": it.get("reviewsCount") or 0,
+                "reviews": reviews, "categoria": it.get("categoryName") or nicho,
+                "direccion": it.get("address") or "", "maps_url": it.get("url") or "",
                 "nicho": nicho, "pais": (terms[0] if terms else "Argentina"), "fuente": "apify-rich",
             })
         return out
     except Exception:
         return []
+
+
+def _google_places_rich(nicho, search_terms, cantidad, max_reviews=5):
+    """Negocios ricos vía Google Places API (New): rating + reseñas + web + teléfono.
+    Free tier grande. Las reseñas vienen inline en el Text Search (hasta 5 por lugar).
+    No da email (el mystery shopper contacta por WhatsApp/teléfono)."""
+    key = config.GOOGLE_MAPS_API_KEY
+    if not key:
+        return []
+    url = "https://places.googleapis.com/v1/places:searchText"
+    fields = ",".join([
+        "places.displayName", "places.websiteUri", "places.nationalPhoneNumber",
+        "places.internationalPhoneNumber", "places.rating", "places.userRatingCount",
+        "places.reviews", "places.formattedAddress", "places.googleMapsUri", "nextPageToken"])
+    headers = {"Content-Type": "application/json", "X-Goog-Api-Key": key, "X-Goog-FieldMask": fields}
+    terms = list(search_terms) if search_terms else [f"{nicho} Argentina"]
+    per = max(1, cantidad // max(1, len(terms)))
+    out = []
+    try:
+        for term in terms:
+            token, got = None, 0
+            while got < per:
+                body = {"textQuery": term, "languageCode": "es", "pageSize": min(20, per)}
+                if token:
+                    body["pageToken"] = token
+                r = httpx.post(url, json=body, headers=headers, timeout=60)
+                if r.status_code >= 400:
+                    # 403 típico = falta habilitar Places API (New) o billing. No rompe.
+                    break
+                data = r.json()
+                for pl in data.get("places", []):
+                    reviews = []
+                    for rv in (pl.get("reviews") or [])[:max_reviews]:
+                        t = ((rv.get("text") or {}).get("text")
+                             or (rv.get("originalText") or {}).get("text") or "")
+                        if t:
+                            reviews.append({"text": t})
+                    out.append({
+                        "empresa": (pl.get("displayName") or {}).get("text", ""), "nombre": "",
+                        "website": pl.get("websiteUri") or "",
+                        "telefono": pl.get("nationalPhoneNumber") or pl.get("internationalPhoneNumber") or "",
+                        "email": "",
+                        "rating": pl.get("rating"), "reviews_count": pl.get("userRatingCount") or 0,
+                        "reviews": reviews, "categoria": nicho,
+                        "direccion": pl.get("formattedAddress") or "",
+                        "maps_url": pl.get("googleMapsUri") or "",
+                        "nicho": nicho, "pais": term, "fuente": "google_places_rich",
+                    })
+                    got += 1
+                token = data.get("nextPageToken")
+                if not token or got >= per:
+                    break
+                time.sleep(2)  # el nextPageToken tarda ~2s en activarse
+            if len(out) >= cantidad:
+                break
+        return out[:cantidad]
+    except Exception:
+        return out[:cantidad]
+
+
+def buscar_negocios_rich(nicho, search_terms, cantidad, max_reviews=6, fuente=None):
+    """Trae negocios CON datos ricos (reseñas, rating, web, teléfono) para el Auditor.
+    Fuente preferida = config.RICH_SOURCE ('google' | 'apify'); si no trae nada, prueba la
+    otra. Cae a mock si PROSPECTS_MOCK."""
+    if config.PROSPECTS_MOCK:
+        return _mock_negocios_rich(nicho, search_terms, cantidad)
+    pref = (fuente or config.RICH_SOURCE or "google").lower()
+    orden = ["google", "apify"] if pref == "google" else ["apify", "google"]
+    for f in orden:
+        if f == "google":
+            res = _google_places_rich(nicho, search_terms, cantidad, min(max_reviews, 5))
+        else:
+            res = _apify_rich(nicho, search_terms, cantidad, max_reviews)
+        if res:
+            return res
+    return []
 
 
 def search_prospects(nicho, pais, cantidad, fuentes=("apify", "web"), search_terms=None):
